@@ -60,6 +60,7 @@ DOMAIN_URL_PATTERNS = {
     "www.footballcoin.io": ["/blog/"],
     "www.fantasyfootballscout.co.uk": ["/2026/"],
     "allaboutfpl.com": ["/2026/", "/category/"],
+    "www.fantasyfootballhub.co.uk": ["/world-cup"]
 }
 
 # URLs with years older than this are excluded (e.g. /2022/ in path)
