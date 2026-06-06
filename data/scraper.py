@@ -1,4 +1,4 @@
-"""Scrape expert opinions from fantasy football sites."""
+"""Scrape expert opinions from fantasy football sites and classify by player/country."""
 import logging
 import time
 from typing import Any
@@ -8,6 +8,7 @@ from bs4 import BeautifulSoup
 
 from config import EXPERT_SOURCES
 from data.cache import get_cached, save_to_cache
+from analysis.expert_opinions import classify_mentions
 
 logger = logging.getLogger(__name__)
 
@@ -38,8 +39,18 @@ def parse_expert_content(html: str, source_name: str) -> dict[str, Any]:
 def scrape_expert_opinions(
     sources: list[dict] | None = None,
     use_cache: bool = True,
-) -> list[dict[str, Any]]:
-    """Scrape opinions from all expert sources."""
+) -> dict[str, Any]:
+    """Scrape opinions and return classified data by player and country.
+
+    Returns:
+        {
+            "raw": [...],           # Raw scraped articles
+            "classified": {        # Classified by player/country
+                "players": {...},
+                "countries": {...}
+            }
+        }
+    """
     if sources is None:
         sources = EXPERT_SOURCES
 
@@ -67,7 +78,11 @@ def scrape_expert_opinions(
         except Exception as e:
             logger.error("Unexpected error scraping %s: %s", name, e)
 
-    if results:
-        save_to_cache(cache_key, results)
+    classified = classify_mentions(results) if results else {"players": {}, "countries": {}}
 
-    return results
+    output = {"raw": results, "classified": classified}
+
+    if results:
+        save_to_cache(cache_key, output)
+
+    return output

@@ -1,15 +1,154 @@
-"""Expert opinion analysis and recommendation extraction."""
+"""Expert opinion analysis — classify mentions by player and country."""
 import re
 from typing import Any
 
+from data.players_reference import PLAYERS_BY_COUNTRY, COUNTRY_NAMES
+
+
+POSITIVE_KEYWORDS = [
+    "top pick", "essential", "must-have", "must have", "strong", "best",
+    "value", "great", "premium", "captain", "differential", "in-form",
+    "form", "score", "goals", "assist", "clean sheet", "recommend",
+    "target", "pick", "own", "starting", "key", "star", "favourite",
+    "favorite", "bargain", "cheap", "enables", "enable",
+]
+
+NEGATIVE_KEYWORDS = [
+    "avoid", "overpriced", "risk", "doubt", "bench", "injury",
+    "suspended", "dropped", "rotation", "rotation risk", "unfit",
+    "ruled out", "misses", "miss", "out", "unavailable",
+]
 
 SOURCE_CREDIBILITY = {
     "FantasyFootballScout": {"reliability": "high", "type": "written"},
     "FantasyFootballHub": {"reliability": "high", "type": "data-driven"},
     "AllAboutFPL": {"reliability": "medium", "type": "blog"},
-    "RotoWire": {"reliability": "high", "type": "professional"},
-    "FootballPredictions": {"reliability": "medium", "type": "predictions"},
+    "FootballCoin": {"reliability": "medium", "type": "predictions"},
 }
+
+
+def _name_variants(full_name: str) -> list[str]:
+    """Generate searchable variants for a player name.
+
+    'Lionel Messi' -> ['Lionel Messi', 'Messi', 'Lionel']
+    'Virgil van Dijk' -> ['Virgil van Dijk', 'van Dijk', 'Virgil']
+    'Vinicius Junior' -> ['Vinicius Junior', 'Vinicius']
+    """
+    parts = full_name.split()
+    variants = [full_name]
+
+    # Last name (most common way to refer to players)
+    if len(parts) >= 2:
+        # For multi-word last names like "van Dijk" or "de Bruyne"
+        # Check if second-to-last is a short preposition
+        if len(parts) >= 3 and len(parts[-2]) <= 3:
+            last_name = " ".join(parts[-2:])  # "van Dijk"
+        else:
+            last_name = parts[-1]  # "Messi"
+        if last_name != full_name:
+            variants.append(last_name)
+
+    # First name
+    if len(parts) >= 2 and parts[0] != full_name:
+        variants.append(parts[0])
+
+    return list(dict.fromkeys(variants))  # dedupe preserving order
+
+
+def _sentiment_around(text: str, match_start: int, match_end: int) -> str:
+    """Determine sentiment from text context around a match."""
+    start = max(0, match_start - 80)
+    end = min(len(text), match_end + 80)
+    context = text[start:end].lower()
+
+    pos = sum(1 for w in POSITIVE_KEYWORDS if w in context)
+    neg = sum(1 for w in NEGATIVE_KEYWORDS if w in context)
+
+    if pos > neg:
+        return "positive"
+    elif neg > pos:
+        return "negative"
+    return "neutral"
+
+
+def classify_mentions(opinions: list[dict]) -> dict[str, Any]:
+    """Classify scraped opinions by player and country mentions.
+
+    Returns:
+        {
+            "players": {
+                "Lionel Messi": {
+                    "country": "Argentina",
+                    "mentions": [{"source": "...", "sentiment": "...", "context": "..."}]
+                }
+            },
+            "countries": {
+                "Argentina": {
+                    "mentions": [{"source": "...", "sentiment": "...", "context": "..."}],
+                    "players_mentioned": ["Messi", "Alvarez"]
+                }
+            }
+        }
+    """
+    players_result: dict[str, dict] = {}
+    countries_result: dict[str, dict] = {}
+
+    for opinion in opinions:
+        source = opinion["source"]
+        content = opinion["content"]
+
+        # --- Match players (try all name variants) ---
+        for player_name, country in PLAYERS_BY_COUNTRY.items():
+            matched = False
+            for variant in _name_variants(player_name):
+                pattern = re.compile(r'\b' + re.escape(variant) + r'\b', re.IGNORECASE)
+                match = pattern.search(content)
+                if match:
+                    sentiment = _sentiment_around(content, match.start(), match.end())
+                    ctx_start = max(0, match.start() - 60)
+                    ctx_end = min(len(content), match.end() + 60)
+                    context_snippet = content[ctx_start:ctx_end].strip()
+
+                    if player_name not in players_result:
+                        players_result[player_name] = {"country": country, "mentions": []}
+                    players_result[player_name]["mentions"].append({
+                        "source": source,
+                        "sentiment": sentiment,
+                        "context": context_snippet,
+                    })
+                    matched = True
+                    break  # only match once per player per article
+
+        # --- Match countries ---
+        for country in COUNTRY_NAMES:
+            if len(country) < 3:
+                continue
+            pattern = re.compile(r'\b' + re.escape(country) + r'\b', re.IGNORECASE)
+            match = pattern.search(content)
+            if not match:
+                continue
+
+            sentiment = _sentiment_around(content, match.start(), match.end())
+            ctx_start = max(0, match.start() - 60)
+            ctx_end = min(len(content), match.end() + 60)
+            context_snippet = content[ctx_start:ctx_end].strip()
+
+            if country not in countries_result:
+                countries_result[country] = {"mentions": [], "players_mentioned": []}
+            countries_result[country]["mentions"].append({
+                "source": source,
+                "sentiment": sentiment,
+                "context": context_snippet,
+            })
+
+    # Add players mentioned per country
+    for player_name, data in players_result.items():
+        country = data["country"]
+        if country in countries_result:
+            if player_name not in countries_result[country]["players_mentioned"]:
+                countries_result[country]["players_mentioned"].append(player_name)
+
+    return {"players": players_result, "countries": countries_result}
 
 
 def summarize_expert_opinions(opinions: list[dict]) -> dict[str, Any]:
@@ -20,49 +159,6 @@ def summarize_expert_opinions(opinions: list[dict]) -> dict[str, Any]:
         "total_opinions": len(opinions),
         "latest_timestamp": max((o.get("timestamp", 0) for o in opinions), default=0),
     }
-
-
-def extract_recommendations(opinions: list[dict]) -> list[dict[str, str]]:
-    """Extract player recommendations from expert opinions."""
-    recommendations = []
-    seen_players = set()
-
-    # Common positive sentiment keywords
-    positive = ["top pick", "essential", "must-have", "strong", "best", "value", "great", "premium"]
-    negative = ["avoid", "overpriced", "risk", "doubt", "bench"]
-
-    for opinion in opinions:
-        content = opinion["content"].lower()
-        # Find capitalized words that look like player names
-        words = re.findall(r'\b[A-Z][a-z]+(?:\s[A-Z][a-z]+)*\b', opinion["content"])
-
-        for name in words:
-            if name in seen_players:
-                continue
-            seen_players.add(name)
-
-            # Determine sentiment
-            name_lower = name.lower()
-            # Check context around the name
-            idx = content.find(name_lower)
-            if idx == -1:
-                continue
-            context = content[max(0, idx - 50):idx + len(name) + 50]
-
-            sentiment = "neutral"
-            if any(w in context for w in positive):
-                sentiment = "positive"
-            elif any(w in context for w in negative):
-                sentiment = "negative"
-
-            recommendations.append({
-                "player_name": name,
-                "sentiment": sentiment,
-                "source": opinion["source"],
-                "context": context.strip(),
-            })
-
-    return recommendations
 
 
 def get_source_credibility(source_name: str) -> dict[str, str]:

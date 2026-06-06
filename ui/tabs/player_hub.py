@@ -4,7 +4,6 @@ import pandas as pd
 
 from analysis.player_stats import calculate_fantasy_points, rank_players, get_top_players_by_position
 from analysis.player_fitness import assess_fitness_status
-from analysis.expert_opinions import extract_recommendations
 from data.fetcher import fetch_players
 
 
@@ -121,15 +120,63 @@ def render():
 
     with tab_experts:
         st.subheader("Expert Recommendations")
-        st.info("Expert opinions are sourced from FantasyFootballScout, FantasyFootballHub, AllAboutFPL, RotoWire, and FootballPredictions.com")
         from data.scraper import scrape_expert_opinions
-        opinions = scrape_expert_opinions(use_cache=True)
-        if opinions:
-            recs = extract_recommendations(opinions)
-            if recs:
-                for rec in recs[:10]:
-                    st.markdown(f"**{rec['player_name']}** — {rec['sentiment']} ({rec['source']})")
-            else:
-                st.info("No specific player recommendations extracted yet.")
-        else:
-            st.info("Expert opinions not yet scraped. Run data refresh first.")
+        data = scrape_expert_opinions(use_cache=True)
+        classified = data.get("classified", {})
+        players_mentions = classified.get("players", {})
+        countries_mentions = classified.get("countries", {})
+
+        if not players_mentions and not countries_mentions:
+            st.info("No expert data classified yet. Run: python -c \"from data.scraper import scrape_expert_opinions; scrape_expert_opinions(use_cache=False)\"")
+            return
+
+        tab_by_player, tab_by_country = st.tabs(["By Player", "By Country"])
+
+        with tab_by_player:
+            st.markdown(f"**{len(players_mentions)} players mentioned across all sources**")
+            # Sort by number of mentions (most talked about first)
+            sorted_players = sorted(
+                players_mentions.items(),
+                key=lambda x: len(x[1]["mentions"]),
+                reverse=True,
+            )
+            for player_name, data_p in sorted_players[:30]:
+                country = data_p["country"]
+                mentions = data_p["mentions"]
+                sentiments = [m["sentiment"] for m in mentions]
+                pos = sentiments.count("positive")
+                neg = sentiments.count("negative")
+                sources = list(set(m["source"] for m in mentions))
+
+                sentiment_bar = f"🟢 {pos}" if pos else ""
+                sentiment_bar += f" 🔴 {neg}" if neg else ""
+
+                with st.expander(f"**{player_name}** ({country}) — {len(mentions)} mentions {sentiment_bar}"):
+                    st.caption(f"Sources: {', '.join(sources)}")
+                    for m in mentions:
+                        color = "green" if m["sentiment"] == "positive" else "red" if m["sentiment"] == "negative" else "gray"
+                        st.markdown(f"**{m['source']}** [{m['sentiment']}] — _{m['context']}_")
+
+        with tab_by_country:
+            st.markdown(f"**{len(countries_mentions)} countries mentioned across all sources**")
+            sorted_countries = sorted(
+                countries_mentions.items(),
+                key=lambda x: len(x[1]["mentions"]),
+                reverse=True,
+            )
+            for country, data_c in sorted_countries:
+                mentions = data_c["mentions"]
+                players_list = data_c.get("players_mentioned", [])
+                sentiments = [m["sentiment"] for m in mentions]
+                pos = sentiments.count("positive")
+                neg = sentiments.count("negative")
+
+                sentiment_bar = f"🟢 {pos}" if pos else ""
+                sentiment_bar += f" 🔴 {neg}" if neg else ""
+
+                with st.expander(f"**{country}** — {len(mentions)} mentions {sentiment_bar}"):
+                    if players_list:
+                        st.caption(f"Players mentioned: {', '.join(players_list[:10])}")
+                    for m in mentions[:5]:
+                        color = "green" if m["sentiment"] == "positive" else "red" if m["sentiment"] == "negative" else "gray"
+                        st.markdown(f"**{m['source']}** [{m['sentiment']}] — _{m['context']}_")

@@ -26,15 +26,17 @@ class TestParseExpertContent:
 
 class TestScrapeExpertOpinions:
     @patch("data.scraper.requests.get")
-    def test_scrape_returns_list(self, mock_get):
+    def test_scrape_returns_dict(self, mock_get):
         mock_resp = MagicMock()
         mock_resp.status_code = 200
         mock_resp.text = "<html><body><p>Expert advice here</p></body></html>"
         mock_resp.raise_for_status = MagicMock()
         mock_get.return_value = mock_resp
         result = scrape_expert_opinions(use_cache=False)
-        assert isinstance(result, list)
-        assert len(result) > 0
+        assert isinstance(result, dict)
+        assert "raw" in result
+        assert "classified" in result
+        assert len(result["raw"]) > 0
 
     @patch("data.scraper.requests.get")
     def test_scrape_caches_results(self, mock_get):
@@ -43,9 +45,7 @@ class TestScrapeExpertOpinions:
         mock_resp.text = "<html><body><p>Content</p></body></html>"
         mock_resp.raise_for_status = MagicMock()
         mock_get.return_value = mock_resp
-        # First call hits network
         result1 = scrape_expert_opinions(use_cache=False)
-        # Second call should use cache
         result2 = scrape_expert_opinions(use_cache=True)
         assert result1 == result2
 
@@ -54,5 +54,5 @@ class TestScrapeExpertOpinions:
         import requests as req
         mock_get.side_effect = req.ConnectionError("Network down")
         result = scrape_expert_opinions(use_cache=False)
-        assert isinstance(result, list)
-        # Should return empty list on error, not crash
+        assert isinstance(result, dict)
+        assert result["raw"] == []
