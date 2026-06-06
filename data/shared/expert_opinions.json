@@ -1,11 +1,8 @@
 {
   "raw": [
     {
-      "url": "https://example.com/same",
-      "content": "Existing",
-      "source": "Test",
-      "depth": 0,
-      "timestamp": 0
+      "url": "http://a.com",
+      "content": "Test"
     }
   ],
   "classified": {
@@ -18,5 +15,5 @@
     "top_players": [],
     "top_countries": []
   },
-  "llm_summary": ""
+  "llm_summary": "Summary text"
 }

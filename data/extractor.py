@@ -253,6 +253,7 @@ class OpenRouterProvider(LLMProvider):
         }
 
         for model in self.models:
+            resp = None
             try:
                 logger.info("[LLM] Trying model: %s", model)
                 logger.info("[LLM] Prompt length: %d chars", len(prompt))
@@ -262,11 +263,13 @@ class OpenRouterProvider(LLMProvider):
                     json={**payload, "model": model},
                     timeout=60,
                 )
+                logger.info("[LLM] Response status: %d on %s", resp.status_code, model)
                 if resp.status_code == 429:
                     logger.warning("[LLM] Rate limited on %s, trying next...", model)
                     continue
                 if resp.status_code != 200:
-                    logger.warning("[LLM] HTTP %d on %s: %s", resp.status_code, model, resp.text[:500])
+                    logger.warning("[LLM] HTTP %d on %s — response body: %s",
+                                   resp.status_code, model, resp.text[:1000])
                     continue
                 resp.raise_for_status()
                 data = resp.json()
@@ -277,7 +280,13 @@ class OpenRouterProvider(LLMProvider):
                 logger.warning("[LLM] Timeout on %s, trying next...", model)
                 continue
             except Exception as e:
-                logger.warning("[LLM] Error on %s: %s", model, e)
+                body = ""
+                if resp is not None:
+                    try:
+                        body = resp.text[:1000]
+                    except Exception:
+                        body = "(could not read response body)"
+                logger.warning("[LLM] Error on %s: %s — response body: %s", model, e, body)
                 continue
 
         logger.error("[LLM] All models failed")
@@ -315,6 +324,7 @@ class OpenRouterProvider(LLMProvider):
         }
 
         for model in self.models:
+            resp = None
             try:
                 logger.info("[LLM] Summarizing with model: %s", model)
                 resp = requests.post(
@@ -323,7 +333,13 @@ class OpenRouterProvider(LLMProvider):
                     json={**payload, "model": model},
                     timeout=60,
                 )
+                logger.info("[LLM] Summary response status: %d on %s", resp.status_code, model)
                 if resp.status_code == 429:
+                    logger.warning("[LLM] Rate limited on %s for summary, trying next...", model)
+                    continue
+                if resp.status_code != 200:
+                    logger.warning("[LLM] Summary HTTP %d on %s — response body: %s",
+                                   resp.status_code, model, resp.text[:1000])
                     continue
                 resp.raise_for_status()
                 data = resp.json()
@@ -331,7 +347,13 @@ class OpenRouterProvider(LLMProvider):
                 logger.info("[LLM] Summary generated (%d chars)", len(text))
                 return text.strip()
             except Exception as e:
-                logger.warning("[LLM] Summary failed on %s: %s", model, e)
+                body = ""
+                if resp is not None:
+                    try:
+                        body = resp.text[:1000]
+                    except Exception:
+                        body = "(could not read response body)"
+                logger.warning("[LLM] Summary failed on %s: %s — response body: %s", model, e, body)
                 continue
 
         logger.error("[LLM] All models failed for summary")
