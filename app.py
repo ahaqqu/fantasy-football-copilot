@@ -23,7 +23,8 @@ with tab2:
     st.info("Fixture Analysis — coming soon (Task 12)")
 
 with tab3:
-    st.info("Team Hub — coming soon (Task 13)")
+    from ui.tabs.team_hub import render as render_team_hub
+    render_team_hub()
 
 with tab4:
     st.info("Team Selector — coming soon (Task 14)")
