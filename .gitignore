@@ -16,8 +16,8 @@ venv/
 Thumbs.db
 .opencode/
 
-# Data cache - only ignore temporary files
-data/cache/visited_urls.json
-data/cache/fixtures_*.json
-data/cache/players_*.json
-data/cache/team_*_players_*.json
+# Data cache - temporary files (not committed)
+data/cache/
+
+# Data shared - committed to git (read by Streamlit Cloud)
+# data/shared/ is tracked

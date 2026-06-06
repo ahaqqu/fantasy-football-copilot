@@ -6,14 +6,14 @@ import time
 from pathlib import Path
 from typing import Any
 
-from config import EXPERT_SOURCES, LLM_PROVIDER, CACHE_DIR
+from config import EXPERT_SOURCES, LLM_PROVIDER, SHARED_DIR
 from data.cache import save_to_cache
 from data.crawler import crawl_source
 from analysis.expert_opinions import classify_mentions
 
 logger = logging.getLogger(__name__)
 
-_RAW_ARTICLES_FILE = CACHE_DIR / "raw_articles.json"
+_RAW_ARTICLES_FILE = SHARED_DIR / "raw_articles.json"
 
 
 def _content_hash(text: str) -> str:
@@ -188,10 +188,11 @@ def scrape_expert_opinions(
     }
 
     if all_articles:
-        save_to_cache("expert_opinions", output)
+        # Save to shared directory (committed to git)
+        _save_json(SHARED_DIR / "expert_opinions.json", output)
         _save_raw_articles(all_articles)
-        logger.info("  Cached to: data/cache/expert_opinions.json")
-        logger.info("  Raw articles: data/cache/raw_articles.json")
+        logger.info("  Saved to: data/shared/expert_opinions.json")
+        logger.info("  Raw articles: data/shared/raw_articles.json")
 
     logger.info("")
     logger.info("=" * 60)
@@ -206,14 +207,19 @@ def scrape_expert_opinions(
     return output
 
 
-def _save_raw_articles(articles: list[dict]) -> None:
-    """Save raw articles separately for LLM retry without re-crawling."""
+def _save_json(path: Path, data: Any) -> None:
+    """Save data as JSON file."""
     try:
-        with open(_RAW_ARTICLES_FILE, "w", encoding="utf-8") as f:
-            json.dump(articles, f, ensure_ascii=False, indent=2)
-        logger.info("  [RAW] Saved %d articles to %s", len(articles), _RAW_ARTICLES_FILE)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
     except Exception as e:
-        logger.error("  [RAW] Failed to save: %s", e)
+        logger.error("  [SAVE] Failed to save %s: %s", path, e)
+
+
+def _save_raw_articles(articles: list[dict]) -> None:
+    """Save raw articles for LLM retry without re-crawling."""
+    _save_json(_RAW_ARTICLES_FILE, articles)
+    logger.info("  [RAW] Saved %d articles", len(articles))
 
 
 def _load_raw_articles() -> list[dict] | None:
@@ -270,8 +276,8 @@ def retry_llm() -> dict[str, Any] | None:
         "summary": summary,
         "llm_summary": llm_summary,
     }
-    save_to_cache("expert_opinions", output)
-    logger.info("  Updated: data/cache/expert_opinions.json")
+    _save_json(SHARED_DIR / "expert_opinions.json", output)
+    logger.info("  Saved to: data/shared/expert_opinions.json")
 
     logger.info("=" * 60)
     logger.info("LLM RETRY COMPLETE")

@@ -121,9 +121,18 @@ def render():
     with tab_experts:
         st.subheader("Expert Recommendations")
 
-        # Load data
-        from data.scraper import scrape_expert_opinions
-        data = scrape_expert_opinions(use_cache=True)
+        # Load expert data from shared directory
+        import json
+        from config import SHARED_DIR
+        expert_file = SHARED_DIR / "expert_opinions.json"
+        if not expert_file.exists():
+            st.warning("No expert opinions yet.")
+            st.info("Expert data is updated daily from football analysis sites.")
+            return
+
+        with open(expert_file, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
         classified = data.get("classified", {})
         players_mentions = classified.get("players", {})
         countries_mentions = classified.get("countries", {})

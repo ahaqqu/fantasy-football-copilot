@@ -3,16 +3,16 @@ import json
 import time
 from typing import Any
 
-from config import CACHE_DIR
+from config import SHARED_DIR
 from data.players_reference import PLAYERS_BY_COUNTRY
 
-_LEARNED_FILE = CACHE_DIR / "learned_players.json"
+_LEARNED_FILE = SHARED_DIR / "learned_players.json"
 
 
 def _ensure_file() -> None:
     """Create learned JSON file if it doesn't exist."""
     if not _LEARNED_FILE.exists():
-        CACHE_DIR.mkdir(parents=True, exist_ok=True)
+        SHARED_DIR.mkdir(parents=True, exist_ok=True)
         with open(_LEARNED_FILE, "w", encoding="utf-8") as f:
             json.dump({"players": {}, "stats": {"total_discovered": 0, "total_verified": 0, "last_scrape": None}}, f, indent=2)
 

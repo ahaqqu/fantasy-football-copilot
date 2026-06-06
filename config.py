@@ -10,9 +10,11 @@ load_dotenv()
 PROJECT_ROOT = Path(__file__).parent
 DATA_DIR = PROJECT_ROOT / "data"
 CACHE_DIR = DATA_DIR / "cache"
+SHARED_DIR = DATA_DIR / "shared"  # Committed to git, read by Streamlit Cloud
 
 # Ensure directories exist
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
+SHARED_DIR.mkdir(parents=True, exist_ok=True)
 
 # === API Keys ===
 API_FOOTBALL_KEY = os.getenv("API_FOOTBALL_KEY", "")
