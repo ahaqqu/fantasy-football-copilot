@@ -8,6 +8,7 @@ A Streamlit dashboard for analyzing FIFA World Cup 2026 Fantasy Football decisio
 - **Fixture Analysis** — view fixtures with attack (xG) and defense (CS%) ratings. Color-coded easy/medium/hard difficulty per team.
 - **Team Hub** — browse national team squads, predict starting XI based on last 6 months of selections, and track player fitness (Healthy / Rotation Risk / Injury Risk / Doubtful / Suspended).
 - **Team Selector** — auto-optimize your fantasy XI within budget and formation constraints, or manually pick players.
+- **Auto-Discover Players** — LLM automatically discovers new players from articles, verifies they are real, and adds to database
 
 ### Expert Scraping
 
@@ -17,6 +18,20 @@ A Streamlit dashboard for analyzing FIFA World Cup 2026 Fantasy Football decisio
 - Full browser-like headers to avoid bot detection
 - Classified by player and country with sentiment analysis
 - Optional LLM extraction (HuggingFace free tier or Google Gemini)
+
+### Auto-Discover Players
+
+The scraper automatically discovers new football players from expert articles using LLM verification:
+
+1. Extracts player names from all articles (batched)
+2. Filters out already-known players
+3. Verifies unknowns with LLM ("Is this a real football player?")
+4. Saves verified players to `data/learned_players.json`
+
+To reset learned players:
+```bash
+rm data/cache/learned_players.json
+```
 
 ## Quick Start
 
@@ -75,6 +90,8 @@ All settings in `config.py` (or override via `.env`):
 | `LLM_PROVIDER` | `huggingface` | LLM for extraction: `huggingface` or `gemini` |
 | `HUGGINGFACE_MODEL` | `microsoft/Phi-3-mini-4k-instruct` | HF model to use |
 | `CACHE_TTL_HOURS` | `24` | How long to cache fetched data |
+| `OPENROUTER_API_KEY` | (required for LLM) | OpenRouter API key for better model quality |
+| `OPENROUTER_MODELS` | `["nvidia/nemotron-3-super:free", ...]` | Fallback model array |
 
 ## Project Structure
 
