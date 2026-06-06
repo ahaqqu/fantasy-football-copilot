@@ -28,13 +28,10 @@ def _extract_links(html: str, base_url: str) -> list[str]:
 
     for tag in soup.find_all("a", href=True):
         href = tag["href"]
-        # Resolve relative URLs
         full_url = urljoin(base_url, href)
         parsed = urlparse(full_url)
 
-        # Only follow same-domain links
         if parsed.netloc == base_domain and parsed.scheme in ("http", "https"):
-            # Strip fragments
             clean_url = parsed._replace(fragment="").geturl()
             if clean_url not in links:
                 links.append(clean_url)
@@ -45,16 +42,13 @@ def _extract_links(html: str, base_url: str) -> list[str]:
 def _is_article_url(url: str) -> bool:
     """Heuristic: is this URL likely an article (not category/tag/page)?"""
     path = urlparse(url).path
-    # Articles often have dates or slugs with hyphens
-    # Skip category, tag, page, author pages
     skip_patterns = ["/category/", "/tag/", "/page/", "/author/", "/search", "?s="]
     if any(p in path.lower() for p in skip_patterns):
         return False
-    # Articles usually have a date-like pattern or long slug
     parts = [p for p in path.split("/") if p]
-    if len(parts) >= 3:  # e.g. /2026/06/05/article-slug
+    if len(parts) >= 3:
         return True
-    if len(parts) >= 2 and len(parts[-1]) > 10:  # e.g. /blog/article-slug
+    if len(parts) >= 2 and len(parts[-1]) > 10:
         return True
     return False
 
@@ -62,6 +56,7 @@ def _is_article_url(url: str) -> bool:
 def crawl_page(url: str, visited: set[str] | None = None) -> dict[str, Any] | None:
     """Fetch a single page and return its content."""
     if visited is not None and url in visited:
+        logger.debug("  Skipping (already visited): %s", url[:80])
         return None
 
     try:
@@ -77,14 +72,24 @@ def crawl_page(url: str, visited: set[str] | None = None) -> dict[str, Any] | No
         body = soup.find("body")
         content = body.get_text(separator="\n", strip=True) if body else soup.get_text(separator="\n", strip=True)
 
+        logger.debug("  Fetched %d bytes from %s", len(resp.text), url[:80])
         return {
             "url": url,
             "content": content[:8000],
             "html": resp.text,
             "status_code": resp.status_code,
         }
+    except requests.ConnectionError as e:
+        logger.warning("  [FAIL] Connection error: %s -> %s", url[:60], e)
+        return None
+    except requests.Timeout as e:
+        logger.warning("  [FAIL] Timeout after %ds: %s", CRAWL_TIMEOUT, url[:60])
+        return None
+    except requests.HTTPError as e:
+        logger.warning("  [FAIL] HTTP %s: %s", e.response.status_code if e.response else "?", url[:60])
+        return None
     except requests.RequestException as e:
-        logger.warning("Failed to fetch %s: %s", url, e)
+        logger.warning("  [FAIL] Request error: %s -> %s", url[:60], e)
         return None
 
 
@@ -93,50 +98,65 @@ def crawl_source(
     max_depth: int | None = None,
     max_pages: int | None = None,
 ) -> list[dict[str, Any]]:
-    """Crawl a source starting from a URL, following links up to max_depth.
-
-    Returns list of crawled page dicts with url, content, html, depth.
-    """
+    """Crawl a source starting from a URL, following links up to max_depth."""
     if max_depth is None:
         max_depth = CRAWL_DEPTH
     if max_pages is None:
         max_pages = CRAWL_MAX_PAGES_PER_SOURCE
 
+    domain = urlparse(start_url).netloc
+    logger.info("--- Starting crawl: %s (depth=%d, max_pages=%d) ---", domain, max_depth, max_pages)
+
     visited: set[str] = set()
     results: list[dict[str, Any]] = []
-    # Queue: list of (url, depth)
     queue: list[tuple[str, int]] = [(start_url, 0)]
+    failed = 0
+    skipped_links = 0
 
     while queue and len(results) < max_pages:
         url, depth = queue.pop(0)
 
         if url in visited:
+            skipped_links += 1
             continue
         if depth > max_depth:
+            logger.debug("  Skipping (max depth reached): %s", url[:80])
             continue
 
         # Polite delay
         if results:
             delay = random.uniform(CRAWL_DELAY_MIN, CRAWL_DELAY_MAX)
+            logger.debug("  Waiting %.1fs before next request...", delay)
             time.sleep(delay)
 
         page = crawl_page(url, visited)
         if page is None:
+            failed += 1
             continue
 
         page["depth"] = depth
         results.append(page)
-        logger.info("Crawled depth=%d %s", depth, url[:80])
+        logger.info("  [OK] depth=%d page=%d/%d %s", depth, len(results), max_pages, url[:72])
 
         # Find links for next depth level
         if depth < max_depth:
             links = _extract_links(page["html"], url)
-            for link in links:
+            article_links = [l for l in links if _is_article_url(l)]
+            other_links = [l for l in links if not _is_article_url(l)]
+            logger.debug("  Found %d links (%d articles, %d other)", len(links), len(article_links), len(other_links))
+
+            for link in article_links:
                 if link not in visited:
-                    # Prefer article-like URLs
-                    if _is_article_url(link):
-                        queue.insert(0, (link, depth + 1))
-                    else:
-                        queue.append((link, depth + 1))
+                    queue.insert(0, (link, depth + 1))
+            for link in other_links:
+                if link not in visited:
+                    queue.append((link, depth + 1))
+
+    # Summary
+    logger.info("--- Crawl complete: %s ---", domain)
+    logger.info("  Pages crawled: %d", len(results))
+    logger.info("  Failed: %d", failed)
+    logger.info("  Skipped (duplicate): %d", skipped_links)
+    logger.info("  Queue remaining: %d", len(queue))
 
     return results

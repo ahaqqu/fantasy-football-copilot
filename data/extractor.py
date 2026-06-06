@@ -58,6 +58,8 @@ class HuggingFaceProvider(LLMProvider):
         self.api_key = api_key
         self.model = model
         self.api_url = f"https://api-inference.huggingface.co/models/{model}"
+        logger.info("[LLM] HuggingFace provider initialized (model=%s, key=%s)",
+                     model, "set" if api_key else "NOT SET")
 
     def extract(self, article_text: str) -> dict[str, Any]:
         prompt = EXTRACTION_PROMPT.format(article_text=article_text[:3000])
@@ -67,16 +69,21 @@ class HuggingFaceProvider(LLMProvider):
             headers["Authorization"] = f"Bearer {self.api_key}"
 
         try:
+            logger.debug("[LLM] Sending request to HuggingFace (%d chars)...", len(prompt))
             resp = requests.post(
                 self.api_url,
                 headers=headers,
                 json={"inputs": prompt, "parameters": {"max_new_tokens": 1024}},
                 timeout=30,
             )
+
+            if resp.status_code == 503:
+                logger.warning("[LLM] Model is loading (503). Retry in a few seconds.")
+                return {"players": [], "countries": []}
+
             resp.raise_for_status()
             output = resp.json()
 
-            # HF returns list of generated texts
             if isinstance(output, list) and len(output) > 0:
                 text = output[0].get("generated_text", "")
             elif isinstance(output, dict):
@@ -84,20 +91,29 @@ class HuggingFaceProvider(LLMProvider):
             else:
                 text = str(output)
 
-            return self._parse_json(text)
+            result = self._parse_json(text)
+            logger.debug("[LLM] Parsed: %d players, %d countries",
+                         len(result.get("players", [])), len(result.get("countries", [])))
+            return result
+
+        except requests.ConnectionError as e:
+            logger.warning("[LLM] Connection failed: %s", e)
+            return {"players": [], "countries": []}
+        except requests.Timeout:
+            logger.warning("[LLM] Request timed out (30s)")
+            return {"players": [], "countries": []}
         except Exception as e:
-            logger.warning("HuggingFace extraction failed: %s", e)
+            logger.warning("[LLM] HuggingFace error: %s", e)
             return {"players": [], "countries": []}
 
     def _parse_json(self, text: str) -> dict[str, Any]:
         """Extract JSON from LLM response text."""
-        # Try to find JSON in the response
         match = re.search(r'\{[\s\S]*\}', text)
         if match:
             try:
                 return json.loads(match.group())
-            except json.JSONDecodeError:
-                pass
+            except json.JSONDecodeError as e:
+                logger.debug("[LLM] JSON parse failed: %s", e)
         return {"players": [], "countries": []}
 
 
@@ -108,6 +124,8 @@ class GeminiProvider(LLMProvider):
         self.api_key = api_key
         self.model = model
         self.api_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+        logger.info("[LLM] Gemini provider initialized (model=%s, key=%s)",
+                     model, "set" if api_key else "NOT SET")
 
     def extract(self, article_text: str) -> dict[str, Any]:
         prompt = EXTRACTION_PROMPT.format(article_text=article_text[:3000])
@@ -121,14 +139,25 @@ class GeminiProvider(LLMProvider):
         }
 
         try:
+            logger.debug("[LLM] Sending request to Gemini (%d chars)...", len(prompt))
             resp = requests.post(self.api_url, json=payload, timeout=30)
             resp.raise_for_status()
             data = resp.json()
 
             text = data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
-            return self._parse_json(text)
+            result = self._parse_json(text)
+            logger.debug("[LLM] Parsed: %d players, %d countries",
+                         len(result.get("players", [])), len(result.get("countries", [])))
+            return result
+
+        except requests.ConnectionError as e:
+            logger.warning("[LLM] Connection failed: %s", e)
+            return {"players": [], "countries": []}
+        except requests.Timeout:
+            logger.warning("[LLM] Request timed out (30s)")
+            return {"players": [], "countries": []}
         except Exception as e:
-            logger.warning("Gemini extraction failed: %s", e)
+            logger.warning("[LLM] Gemini error: %s", e)
             return {"players": [], "countries": []}
 
     def _parse_json(self, text: str) -> dict[str, Any]:
@@ -136,8 +165,8 @@ class GeminiProvider(LLMProvider):
         if match:
             try:
                 return json.loads(match.group())
-            except json.JSONDecodeError:
-                pass
+            except json.JSONDecodeError as e:
+                logger.debug("[LLM] JSON parse failed: %s", e)
         return {"players": [], "countries": []}
 
 
