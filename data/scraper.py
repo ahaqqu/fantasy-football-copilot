@@ -132,6 +132,11 @@ def scrape_expert_opinions(
     logger.info("MERGE")
     logger.info("  Existing: %d | New: %d | Deduped: %d | Total: %d", len(existing_articles), total_new, deduped_count, len(all_articles))
 
+    # Save raw articles IMMEDIATELY (before LLM, so they survive termination)
+    if all_articles:
+        _save_raw_articles(all_articles)
+        logger.info("  [SAVE] Raw articles saved to: data/shared/raw_articles.json")
+
     # Classification
     logger.info("")
     logger.info("-" * 60)
@@ -190,14 +195,13 @@ def scrape_expert_opinions(
     if all_articles:
         # Save to shared directory (committed to git)
         _save_json(SHARED_DIR / "expert_opinions.json", output)
-        _save_raw_articles(all_articles)
         logger.info("")
         logger.info("  FILES SAVED:")
         logger.info("    data/shared/expert_opinions.json  (classified results)")
         logger.info("    data/shared/raw_articles.json     (raw articles for LLM retry)")
         if use_llm:
             logger.info("")
-            logger.info("  To review raw articles before LLM:")
+            logger.info("  To review raw articles:")
             logger.info("    cat data/shared/raw_articles.json")
         else:
             logger.info("")
