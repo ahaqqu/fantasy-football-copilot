@@ -87,7 +87,7 @@ All settings in `config.py` (or override via `.env`):
 | `CRAWL_DELAY_MIN` | `2` | Min seconds between requests |
 | `CRAWL_DELAY_MAX` | `5` | Max seconds between requests |
 | `CRAWL_MAX_PAGES_PER_SOURCE` | `10` | Max pages to crawl per source |
-| `LLM_PROVIDER` | `huggingface` | LLM for extraction: `huggingface` or `gemini` |
+| `LLM_PROVIDER` | `openrouter` | LLM provider: `openrouter`, `huggingface`, or `gemini` |
 | `HUGGINGFACE_MODEL` | `microsoft/Phi-3-mini-4k-instruct` | HF model to use |
 | `CACHE_TTL_HOURS` | `24` | How long to cache fetched data |
 | `OPENROUTER_API_KEY` | (required for LLM) | OpenRouter API key for better model quality |
@@ -138,4 +138,59 @@ python -m pytest tests/ -v
 - **Pandas** — data manipulation
 - **BeautifulSoup4** — web scraping/crawling
 - **Requests** — API calls
-- **HuggingFace / Gemini** — optional LLM extraction
+- **OpenRouter** — LLM extraction (free models with fallback)
+
+## Deploy to Streamlit Community Cloud
+
+Access your dashboard from any device — free, permanent URL.
+
+### 1. Go to [share.streamlit.io](https://share.streamlit.io)
+
+Sign in with your GitHub account.
+
+### 2. Create a new app
+
+- **Repository:** `ahaqqu/fantasy-football-copilot`
+- **Branch:** `main`
+- **Main file path:** `app.py`
+
+### 3. Add secrets
+
+Click "Advanced settings" → "Secrets" and paste:
+
+```toml
+API_FOOTBALL_KEY = "your_api_football_key"
+
+# OpenRouter (recommended)
+LLM_PROVIDER = "openrouter"
+OPENROUTER_API_KEY = "your_openrouter_key"
+
+# OR HuggingFace (fallback)
+# LLM_PROVIDER = "huggingface"
+# HUGGINGFACE_API_KEY = "your_hf_token"
+```
+
+### 4. Deploy
+
+Click "Deploy". You'll get a URL like:
+```
+https://your-app-name.streamlit.app
+```
+
+### 5. Scrape on cloud
+
+Click "Scrape Now" button in the Expert Picks tab, or run:
+```bash
+# Local: scrape first, then deploy
+python scrape.py
+git add data/cache/
+git commit -m "data: add scraped expert opinions"
+git push
+```
+
+### Notes
+
+- **Free tier limits:** Streamlit Community Cloud has 1GB memory, 1 CPU
+- **Scraping works:** The crawler runs on Streamlit's servers
+- **No paid APIs needed:** Uses free OpenRouter models
+- **Data persists:** Cache files stay in the repo (commit them)
