@@ -306,7 +306,7 @@ def _build_articles_batch(articles: list[dict], max_articles: int = 10) -> str:
     """Build numbered article text for batch LLM processing."""
     parts = []
     for i, article in enumerate(articles[:max_articles], 1):
-        parts.append(f"---ARTICLE {i}---\n{article['content'][:2000]}")
+        parts.append(f"---ARTICLE {i}---\n{article['content'][:1000]}")
     return "\n\n".join(parts)
 
 

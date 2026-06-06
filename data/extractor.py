@@ -255,6 +255,7 @@ class OpenRouterProvider(LLMProvider):
         for model in self.models:
             try:
                 logger.info("[LLM] Trying model: %s", model)
+                logger.info("[LLM] Prompt length: %d chars", len(prompt))
                 resp = requests.post(
                     f"{self.base_url}/chat/completions",
                     headers=headers,
@@ -263,6 +264,9 @@ class OpenRouterProvider(LLMProvider):
                 )
                 if resp.status_code == 429:
                     logger.warning("[LLM] Rate limited on %s, trying next...", model)
+                    continue
+                if resp.status_code != 200:
+                    logger.warning("[LLM] HTTP %d on %s: %s", resp.status_code, model, resp.text[:500])
                     continue
                 resp.raise_for_status()
                 data = resp.json()
@@ -273,7 +277,7 @@ class OpenRouterProvider(LLMProvider):
                 logger.warning("[LLM] Timeout on %s, trying next...", model)
                 continue
             except Exception as e:
-                logger.warning("[LLM] Error on %s: %s, trying next...", model, e)
+                logger.warning("[LLM] Error on %s: %s", model, e)
                 continue
 
         logger.error("[LLM] All models failed")
