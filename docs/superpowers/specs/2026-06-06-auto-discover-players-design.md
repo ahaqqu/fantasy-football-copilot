@@ -38,21 +38,25 @@ Switch from HuggingFace to OpenRouter for better model quality.
 
 ## Data Flow
 
+Batched approach — 3-4 LLM calls total regardless of article count:
+
 ```
-Article text
+All articles (numbered 1-N)
     ↓
-LLM Call 1: Extract player names (JSON list)
+LLM Call 1: Extract player names from ALL articles (one batch)
     ↓
-LLM Call 2: Extract countries + sentiment
+LLM Call 2: Extract countries + sentiment from ALL articles (one batch)
     ↓
 Filter: remove known players (PLAYERS_BY_COUNTRY + learned_players.json)
     ↓
-LLM Call 3: Verify unknowns → is_real, full_name (Latin), country
+LLM Call 3: Verify ALL unknowns in one batch (if any)
     ↓
 Save verified players to learned_players.json
     ↓
 Merge all results into classification output
 ```
+
+**Savings**: From 3N calls (N=articles) to 4 calls total.
 
 ## Storage Format
 
@@ -81,25 +85,38 @@ Merge all results into classification output
 
 ## LLM Prompts
 
-### Call 1 — Extract player names
+### Call 1 — Extract player names (batch)
 ```
-Extract all football player names mentioned in this article.
-Return ONLY valid JSON: {"players": ["Name 1", "Name 2"]}
-Article text: {content}
-```
-
-### Call 2 — Extract countries
-```
-Extract country mentions from this article about FIFA World Cup Fantasy.
-For each country, return the sentiment (positive/negative/neutral) and brief context.
+Extract all football player names from these articles. Each article is numbered.
 
 Return ONLY valid JSON:
-{"countries": [{"name": "Country", "sentiment": "positive|negative|neutral", "context": "brief reason"}]}
+{"1": ["Player A", "Player B"], "2": ["Player C"], ...}
 
-Article text: {content}
+Articles:
+---ARTICLE 1---
+{content_1}
+---ARTICLE 2---
+{content_2}
+...
 ```
 
-### Call 3 — Verify unknown players
+### Call 2 — Extract countries (batch)
+```
+Extract country mentions from these articles about FIFA World Cup Fantasy.
+Each article is numbered. For each country, return sentiment and brief context.
+
+Return ONLY valid JSON:
+{"1": [{"name": "Country", "sentiment": "positive|negative|neutral", "context": "..."}], ...}
+
+Articles:
+---ARTICLE 1---
+{content_1}
+---ARTICLE 2---
+{content_2}
+...
+```
+
+### Call 3 — Verify unknown players (single batch)
 ```
 For each player name below, verify:
 1. Is this a real professional football player?
