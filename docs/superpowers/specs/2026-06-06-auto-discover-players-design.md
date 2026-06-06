@@ -38,16 +38,18 @@ Switch from HuggingFace to OpenRouter for better model quality.
 
 ## Data Flow
 
-Batched approach — 3-4 LLM calls total regardless of article count:
+Batched approach — process articles in groups to respect context window limits:
 
 ```
 All articles (numbered 1-N)
     ↓
-LLM Call 1: Extract player names from ALL articles (one batch)
+Split into batches of ~10 articles each
     ↓
-LLM Call 2: Extract countries + sentiment from ALL articles (one batch)
+For each batch:
+    LLM Call 1: Extract player names from batch
+    LLM Call 2: Extract countries + sentiment from batch
     ↓
-Filter: remove known players (PLAYERS_BY_COUNTRY + learned_players.json)
+Filter ALL unknowns across all batches: remove known players
     ↓
 LLM Call 3: Verify ALL unknowns in one batch (if any)
     ↓
@@ -56,7 +58,7 @@ Save verified players to learned_players.json
 Merge all results into classification output
 ```
 
-**Savings**: From 3N calls (N=articles) to 4 calls total.
+**Savings**: From 3N calls (N=articles) to ~0.3N calls (3 calls per ~10 articles).
 
 ## Storage Format
 
