@@ -155,6 +155,8 @@ def _classify_with_llm_batched(articles: list[dict], provider) -> dict[str, Any]
                         all_players[name] = {"country": "Unknown", "mentions": []}
                     all_players[name]["mentions"].append({"source": source, "sentiment": "neutral", "context": ""})
 
+        logger.info("  [BATCH] Players extracted: %d", len(players_by_article))
+
         # Call 2: Extract countries
         countries_by_article = provider.extract_countries(batch_text)
         for article_idx, country_list in countries_by_article.items():
@@ -172,6 +174,8 @@ def _classify_with_llm_batched(articles: list[dict], provider) -> dict[str, Any]
                             "context": country_data.get("context", ""),
                         })
 
+        logger.info("  [BATCH] Countries extracted: %d", len(countries_by_article))
+
     # Find unknown players
     from data.learned_store import get_all_players_merged, save_learned_player
     known = get_all_players_merged()
@@ -181,6 +185,9 @@ def _classify_with_llm_batched(articles: list[dict], provider) -> dict[str, Any]
     if unknowns:
         logger.info("[LLM] Verifying %d unknown players...", len(unknowns))
         verified = provider.verify_players(unknowns)
+        logger.info("  [VERIFY] Unknowns: %d, Verified: %d", len(unknowns), len(verified))
+        for p in verified:
+            logger.info("    + %s (%s)", p.get("full_name", "?"), p.get("country", "?"))
         for player in verified:
             name = player.get("full_name", player.get("name", ""))
             country = player.get("country", "Unknown")
