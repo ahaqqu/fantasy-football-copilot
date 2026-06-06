@@ -2,7 +2,7 @@
 import re
 from typing import Any
 
-from data.players_reference import PLAYERS_BY_COUNTRY, COUNTRY_NAMES
+from data.players_reference import get_all_players, COUNTRY_NAMES
 
 
 POSITIVE_KEYWORDS = [
@@ -98,7 +98,8 @@ def classify_mentions(opinions: list[dict]) -> dict[str, Any]:
         content = opinion["content"]
 
         # --- Match players (try all name variants) ---
-        for player_name, country in PLAYERS_BY_COUNTRY.items():
+        all_players = get_all_players()
+        for player_name, country in all_players.items():
             matched = False
             for variant in _name_variants(player_name):
                 pattern = re.compile(r'\b' + re.escape(variant) + r'\b', re.IGNORECASE)
