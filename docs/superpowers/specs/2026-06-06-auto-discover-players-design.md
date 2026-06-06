@@ -30,11 +30,22 @@ Switch from HuggingFace to OpenRouter for better model quality.
 
 **Recommended model**: `nvidia/nemotron-3-super:free` — 120B params, 1M context, best free model available.
 
+**Fallback models** (tried in order if primary fails):
+1. `nvidia/nemotron-3-super:free` (120B, primary)
+2. `google/gemma-4-31b:free` (31B, fast fallback)
+3. `nvidia/nemotron-3-nano-30b-a3b:free` (30B, lightweight fallback)
+
 **Config changes**:
 - `LLM_PROVIDER = "openrouter"`
 - `OPENROUTER_API_KEY` in `.env`
-- `OPENROUTER_MODEL = "nvidia/nemotron-3-super:free"`
+- `OPENROUTER_MODELS = ["nvidia/nemotron-3-super:free", "google/gemma-4-31b:free", "nvidia/nemotron-3-nano-30b-a3b:free"]`
 - API base: `https://openrouter.ai/api/v1`
+
+**Retry logic**:
+- Try first model → timeout/error → try next model
+- Max 3 attempts per LLM call
+- Log which model succeeded/failed
+- If all fail, skip that batch (don't block scraping)
 
 ## Data Flow
 
