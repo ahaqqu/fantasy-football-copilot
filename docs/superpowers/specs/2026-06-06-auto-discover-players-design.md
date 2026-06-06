@@ -17,6 +17,25 @@ Three LLM calls per article:
 
 Verified players saved to `data/learned_players.json` and merged into classification at runtime.
 
+## LLM Provider: OpenRouter
+
+Switch from HuggingFace to OpenRouter for better model quality.
+
+| Feature | HuggingFace | OpenRouter |
+|---------|-------------|------------|
+| Free models | ~10B params max | 70B+ params (DeepSeek V3, Qwen3-235B) |
+| Rate limit | ~1000 req/day | 200 req/day (with $10 top-up) |
+| Quality | Basic | Significantly better |
+| API format | Custom | OpenAI-compatible |
+
+**Recommended model**: `deepseek/deepseek-chat-v3-0324:free` — best for structured JSON extraction and verification.
+
+**Config changes**:
+- `LLM_PROVIDER = "openrouter"`
+- `OPENROUTER_API_KEY` in `.env`
+- `OPENROUTER_MODEL = "deepseek/deepseek-chat-v3-0324:free"`
+- API base: `https://openrouter.ai/api/v1`
+
 ## Data Flow
 
 ```
@@ -95,7 +114,13 @@ Names to verify: {unknown_names}
 
 ## Integration Points
 
-### 1. `data/extractor.py`
+### 1. `config.py`
+- Add `OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")`
+- Add `OPENROUTER_MODEL = "deepseek/deepseek-chat-v3-0324:free"`
+- Update `LLM_PROVIDER` default to `"openrouter"`
+
+### 2. `data/extractor.py`
+- Add `OpenRouterProvider` class (OpenAI-compatible API)
 - Replace `EXTRACTION_PROMPT` with 3 new prompts:
   - `EXTRACT_PLAYERS_PROMPT`
   - `EXTRACT_COUNTRIES_PROMPT`
@@ -104,9 +129,9 @@ Names to verify: {unknown_names}
   - `extract_player_names(article_text) -> list[str]`
   - `extract_countries(article_text) -> list[dict]`
   - `verify_players(names: list[str]) -> list[dict]`
-- All use existing `HuggingFaceProvider` / `GeminiProvider` infrastructure
+- Keep HuggingFaceProvider and GeminiProvider as fallbacks
 
-### 2. `data/scraper.py`
+### 3. `data/scraper.py`
 - Rewrite `_classify_with_llm()` to use 3 separate calls
 - After extraction, run discovery flow for unknown players
 - Load known players from `players_reference.py` + `learned_players.json`
@@ -115,18 +140,21 @@ Names to verify: {unknown_names}
 - Save new verified players to `learned_players.json`
 - Return merged results: `{players, countries}`
 
-### 3. `data/players_reference.py`
+### 4. `data/players_reference.py`
 - Add `get_all_players() -> dict[str, str]` function
 - Returns merged dict: `PLAYERS_BY_COUNTRY` + learned players
 - Called by `expert_opinions.py` instead of direct `PLAYERS_BY_COUNTRY` access
 
-### 4. `analysis/expert_opinions.py`
+### 5. `analysis/expert_opinions.py`
 - Update `classify_mentions()` to call `get_all_players()` instead of `PLAYERS_BY_COUNTRY`
 - No other changes needed
 
-### 5. New file: `data/learned_players.json`
+### 6. New file: `data/learned_players.json`
 - Created on first run if doesn't exist
 - Format: `{"players": {...}, "stats": {...}}`
+
+### 7. `.env.example`
+- Add `OPENROUTER_API_KEY=your_key_here`
 
 ## Edge Cases
 
@@ -136,6 +164,7 @@ Names to verify: {unknown_names}
 - **LLM fails**: Log warning, continue with next article, don't block scraping
 - **Empty results**: No save, no error
 - **Already known player**: Skip verification, use existing data
+- **OpenRouter rate limit**: Fall back to HuggingFace if OpenRouter fails
 
 ## Testing
 
@@ -145,4 +174,5 @@ Names to verify: {unknown_names}
 - Unit test `verify_players()` filters `is_real: false`
 - Unit test `learned_players.json` read/write
 - Unit test dedup: known players skipped
+- Unit test OpenRouter provider makes correct API calls
 - Integration test: full scrape discovers new player (mock LLM)
