@@ -121,15 +121,41 @@ def render():
     with tab_experts:
         st.subheader("Expert Recommendations")
 
-        # Scrape button
+        # Scrape button with live logs
         col1, col2 = st.columns([1, 3])
         with col1:
             if st.button(" Scrape Now", key="scrape_btn"):
-                with st.spinner("Scraping expert sources..."):
+                import logging
+                import io
+
+                # Capture logs to display in UI
+                log_buffer = io.StringIO()
+                log_handler = logging.StreamHandler(log_buffer)
+                log_handler.setLevel(logging.INFO)
+                log_handler.setFormatter(logging.Formatter("%(message)s"))
+
+                # Add handler to scraper loggers
+                for logger_name in ["data.scraper", "data.crawler", "data.extractor"]:
+                    logging.getLogger(logger_name).addHandler(log_handler)
+
+                log_area = st.empty()
+                status = st.status("Scraping expert sources...", expanded=True)
+
+                try:
                     from data.scraper import scrape_expert_opinions
                     data = scrape_expert_opinions(use_cache=False, use_llm=True)
-                    st.success(f"Scraped {len(data.get('raw', []))} articles!")
+
+                    # Show final logs
+                    logs = log_buffer.getvalue()
+                    if logs:
+                        log_area.code(logs, language=None)
+
+                    status.update(label=f"Scraped {len(data.get('raw', []))} articles!", state="complete")
                     st.rerun()
+                finally:
+                    # Clean up handlers
+                    for logger_name in ["data.scraper", "data.crawler", "data.extractor"]:
+                        logging.getLogger(logger_name).removeHandler(log_handler)
         with col2:
             st.info("Click to scrape fresh expert opinions (takes 1-2 minutes)")
 
