@@ -1,0 +1,289 @@
+<h2>FIFA World Cup 2026 Fantasy Copilot</h2>
+<p class="subtitle">Your personal assistant for winning your fantasy league</p>
+
+<!-- Navigation Tabs -->
+<div style="display: flex; gap: 12px; margin-bottom: 24px; border-bottom: 2px solid #334155; padding-bottom: 12px; flex-wrap: wrap;">
+  <div style="padding: 8px 16px; color: #94a3b8; cursor: pointer;">Player Comparison</div>
+  <div style="padding: 8px 16px; color: #94a3b8; cursor: pointer;">Fixture Analysis</div>
+  <div style="padding: 8px 16px; color: #94a3b8; cursor: pointer;">Team Selector</div>
+  <div style="padding: 8px 16px; color: #94a3b8; cursor: pointer;">Lineup Predictor</div>
+  <div style="padding: 8px 16px; color: #94a3b8; cursor: pointer;">Performance</div>
+  <div style="padding: 8px 16px; background: #3b82f6; border-radius: 8px 8px 0 0; cursor: pointer;">Player Status</div>
+</div>
+
+<!-- Section: Player Status & Fitness -->
+<div class="section">
+  <h3>Player Status & Fitness</h3>
+  <p class="subtitle">Track injuries, suspensions, and match fitness</p>
+  
+  <!-- Filter Bar -->
+  <div style="display: flex; gap: 12px; margin-top: 16px; margin-bottom: 20px; flex-wrap: wrap;">
+    <div style="display: flex; gap: 8px;">
+      <div style="padding: 6px 12px; background: #22c55e30; border: 1px solid #22c55e; border-radius: 6px; font-size: 12px; cursor: pointer;">🟢 Available</div>
+      <div style="padding: 6px 12px; background: #f59e0b30; border: 1px solid #f59e0b; border-radius: 6px; font-size: 12px; cursor: pointer;">🟡 Doubtful</div>
+      <div style="padding: 6px 12px; background: #ef444430; border: 1px solid #ef4444; border-radius: 6px; font-size: 12px; cursor: pointer;">🔴 Injured</div>
+      <div style="padding: 6px 12px; background: #f9731630; border: 1px solid #f97316; border-radius: 6px; font-size: 12px; cursor: pointer;">🟠 Suspended</div>
+    </div>
+    <div style="flex: 1;"></div>
+    <div style="padding: 6px 12px; background: #0f172a; border: 1px solid #334155; border-radius: 6px; font-size: 12px; color: #94a3b8;">🔍 Search player...</div>
+  </div>
+
+  <!-- Status Grid -->
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+    
+    <!-- Injured Players Column -->
+    <div>
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+        <div style="width: 24px; height: 24px; background: #ef4444; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px;">!</div>
+        <h4 style="margin: 0; color: #ef4444;">Injured (6)</h4>
+      </div>
+      
+      <div style="display: grid; gap: 10px;">
+        <!-- Injured Player 1 -->
+        <div style="background: #1e293b; border-radius: 10px; padding: 14px; border-left: 4px solid #ef4444;">
+          <div style="display: flex; justify-content: space-between; align-items: start;">
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <div style="width: 40px; height: 40px; background: #ed2939; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px;">🇫🇷</div>
+              <div>
+                <div style="font-weight: bold;">Karim Benzema</div>
+                <div style="color: #94a3b8; font-size: 12px;">France • Forward • Al-Ittihad</div>
+              </div>
+            </div>
+            <div style="padding: 4px 8px; background: #ef4444; border-radius: 4px; font-size: 11px; font-weight: bold;">OUT</div>
+          </div>
+          <div style="margin-top: 10px; padding: 8px; background: #0f172a; border-radius: 6px; font-size: 12px;">
+            <div style="display: flex; justify-content: space-between;">
+              <span style="color: #94a3b8;">Injury:</span>
+              <span style="font-weight: bold;">Hamstring strain</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-top: 4px;">
+              <span style="color: #94a3b8;">Expected return:</span>
+              <span style="color: #f59e0b;">Jun 18 (MD2)</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-top: 4px;">
+              <span style="color: #94a3b8;">Source:</span>
+              <span style="color: #64748b;">Club announcement</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Injured Player 2 -->
+        <div style="background: #1e293b; border-radius: 10px; padding: 14px; border-left: 4px solid #ef4444;">
+          <div style="display: flex; justify-content: space-between; align-items: start;">
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <div style="width: 40px; height: 40px; background: #009739; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px;">🇧🇷</div>
+              <div>
+                <div style="font-weight: bold;">Neymar Jr</div>
+                <div style="color: #94a3b8; font-size: 12px;">Brazil • Forward • Al-Hilal</div>
+              </div>
+            </div>
+            <div style="padding: 4px 8px; background: #ef4444; border-radius: 4px; font-size: 11px; font-weight: bold;">OUT</div>
+          </div>
+          <div style="margin-top: 10px; padding: 8px; background: #0f172a; border-radius: 6px; font-size: 12px;">
+            <div style="display: flex; justify-content: space-between;">
+              <span style="color: #94a3b8;">Injury:</span>
+              <span style="font-weight: bold;">ACL tear (season over)</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-top: 4px;">
+              <span style="color: #94a3b8;">Expected return:</span>
+              <span style="color: #ef4444;">Tournament over</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-top: 4px;">
+              <span style="color: #94a3b8;">Source:</span>
+              <span style="color: #64748b;">CONFIRMED</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Injured Player 3 -->
+        <div style="background: #1e293b; border-radius: 10px; padding: 14px; border-left: 4px solid #ef4444;">
+          <div style="display: flex; justify-content: space-between; align-items: start;">
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <div style="width: 40px; height: 40px; background: #75aadb; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px;">🇦🇷</div>
+              <div>
+                <div style="font-weight: bold;">Paulo Dybala</div>
+                <div style="color: #94a3b8; font-size: 12px;">Argentina • Forward • Roma</div>
+              </div>
+            </div>
+            <div style="padding: 4px 8px; background: #ef4444; border-radius: 4px; font-size: 11px; font-weight: bold;">OUT</div>
+          </div>
+          <div style="margin-top: 10px; padding: 8px; background: #0f172a; border-radius: 6px; font-size: 12px;">
+            <div style="display: flex; justify-content: space-between;">
+              <span style="color: #94a3b8;">Injury:</span>
+              <span style="font-weight: bold;">Knee ligament</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-top: 4px;">
+              <span style="color: #94a3b8;">Expected return:</span>
+              <span style="color: #ef4444;">Misses group stage</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-top: 4px;">
+              <span style="color: #94a3b8;">Source:</span>
+              <span style="color: #64748b;">Journalist report</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Doubtful & Suspended Column -->
+    <div>
+      <!-- Doubtful Section -->
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+        <div style="width: 24px; height: 24px; background: #f59e0b; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px;">?</div>
+        <h4 style="margin: 0; color: #f59e0b;">Doubtful (4)</h4>
+      </div>
+      
+      <div style="display: grid; gap: 10px; margin-bottom: 20px;">
+        <!-- Doubtful Player 1 -->
+        <div style="background: #1e293b; border-radius: 10px; padding: 14px; border-left: 4px solid #f59e0b;">
+          <div style="display: flex; justify-content: space-between; align-items: start;">
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <div style="width: 40px; height: 40px; background: #75aadb; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px;">🇦🇷</div>
+              <div>
+                <div style="font-weight: bold;">Lionel Messi</div>
+                <div style="color: #94a3b8; font-size: 12px;">Argentina • Forward • Inter Miami</div>
+              </div>
+            </div>
+            <div style="padding: 4px 8px; background: #f59e0b; border-radius: 4px; font-size: 11px; font-weight: bold;">DOUBT</div>
+          </div>
+          <div style="margin-top: 10px; padding: 8px; background: #0f172a; border-radius: 6px; font-size: 12px;">
+            <div style="display: flex; justify-content: space-between;">
+              <span style="color: #94a3b8;">Issue:</span>
+              <span style="font-weight: bold;">Adductor discomfort</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-top: 4px;">
+              <span style="color: #94a3b8;">Status:</span>
+              <span style="color: #f59e0b;">Training separately</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-top: 4px;">
+              <span style="color: #94a3b8;">Chance of MD1:</span>
+              <span style="color: #22c55e;">70%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Doubtful Player 2 -->
+        <div style="background: #1e293b; border-radius: 10px; padding: 14px; border-left: 4px solid #f59e0b;">
+          <div style="display: flex; justify-content: space-between; align-items: start;">
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <div style="width: 40px; height: 40px; background: #ed2939; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px;">🇫🇷</div>
+              <div>
+                <div style="font-weight: bold;">Antoine Griezmann</div>
+                <div style="color: #94a3b8; font-size: 12px;">France • Midfielder • Atlético Madrid</div>
+              </div>
+            </div>
+            <div style="padding: 4px 8px; background: #f59e0b; border-radius: 4px; font-size: 11px; font-weight: bold;">DOUBT</div>
+          </div>
+          <div style="margin-top: 10px; padding: 8px; background: #0f172a; border-radius: 6px; font-size: 12px;">
+            <div style="display: flex; justify-content: space-between;">
+              <span style="color: #94a3b8;">Issue:</span>
+              <span style="font-weight: bold;">Ankle inflammation</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-top: 4px;">
+              <span style="color: #94a3b8;">Status:</span>
+              <span style="color: #f59e0b;">Light training</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-top: 4px;">
+              <span style="color: #94a3b8;">Chance of MD1:</span>
+              <span style="color: #f59e0b;">60%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Suspended Section -->
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+        <div style="width: 24px; height: 24px; background: #f97316; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px;">🚫</div>
+        <h4 style="margin: 0; color: #f97316;">Suspended (2)</h4>
+      </div>
+      
+      <div style="display: grid; gap: 10px;">
+        <!-- Suspended Player 1 -->
+        <div style="background: #1e293b; border-radius: 10px; padding: 14px; border-left: 4px solid #f97316;">
+          <div style="display: flex; justify-content: space-between; align-items: start;">
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <div style="width: 40px; height: 40px; background: #009739; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px;">🇧🇷</div>
+              <div>
+                <div style="font-weight: bold;">Casemiro</div>
+                <div style="color: #94a3b8; font-size: 12px;">Brazil • Midfielder • Man United</div>
+              </div>
+            </div>
+            <div style="padding: 4px 8px; background: #f97316; border-radius: 4px; font-size: 11px; font-weight: bold;">BAN</div>
+          </div>
+          <div style="margin-top: 10px; padding: 8px; background: #0f172a; border-radius: 6px; font-size: 12px;">
+            <div style="display: flex; justify-content: space-between;">
+              <span style="color: #94a3b8;">Reason:</span>
+              <span style="font-weight: bold;">Yellow card accumulation</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-top: 4px;">
+              <span style="color: #94a3b8;">Banned for:</span>
+              <span style="color: #f97316;">MD1 only</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-top: 4px;">
+              <span style="color: #94a3b8;">Available:</span>
+              <span style="color: #22c55e;">MD2 onwards</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Suspended Player 2 -->
+        <div style="background: #1e293b; border-radius: 10px; padding: 14px; border-left: 4px solid #f97316;">
+          <div style="display: flex; justify-content: space-between; align-items: start;">
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <div style="width: 40px; height: 40px; background: #002395; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px;">🇫🇷</div>
+              <div>
+                <div style="font-weight: bold;">Adrien Rabiot</div>
+                <div style="color: #94a3b8; font-size: 12px;">France • Midfielder • Juventus</div>
+              </div>
+            </div>
+            <div style="padding: 4px 8px; background: #f97316; border-radius: 4px; font-size: 11px; font-weight: bold;">BAN</div>
+          </div>
+          <div style="margin-top: 10px; padding: 8px; background: #0f172a; border-radius: 6px; font-size: 12px;">
+            <div style="display: flex; justify-content: space-between;">
+              <span style="color: #94a3b8;">Reason:</span>
+              <span style="font-weight: bold;">Red card (last WCQ)</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-top: 4px;">
+              <span style="color: #94a3b8;">Banned for:</span>
+              <span style="color: #f97316;">MD1-MD2</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-top: 4px;">
+              <span style="color: #94a3b8;">Available:</span>
+              <span style="color: #22c55e;">MD3 onwards</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary Stats -->
+  <div style="margin-top: 24px; padding: 16px; background: #1e293b; border-radius: 10px;">
+    <h4 style="margin-bottom: 12px;">Fitness Summary</h4>
+    <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; text-align: center;">
+      <div style="padding: 12px; background: #22c55e20; border-radius: 8px;">
+        <div style="font-size: 24px; font-weight: bold; color: #22c55e;">847</div>
+        <div style="font-size: 12px; color: #94a3b8;">Available</div>
+      </div>
+      <div style="padding: 12px; background: #f59e0b20; border-radius: 8px;">
+        <div style="font-size: 24px; font-weight: bold; color: #f59e0b;">23</div>
+        <div style="font-size: 12px; color: #94a3b8;">Doubtful</div>
+      </div>
+      <div style="padding: 12px; background: #ef444420; border-radius: 8px;">
+        <div style="font-size: 24px; font-weight: bold; color: #ef4444;">15</div>
+        <div style="font-size: 12px; color: #94a3b8;">Injured</div>
+      </div>
+      <div style="padding: 12px; background: #f9731620; border-radius: 8px;">
+        <div style="font-size: 24px; font-weight: bold; color: #f97316;">8</div>
+        <div style="font-size: 12px; color: #94a3b8;">Suspended</div>
+      </div>
+      <div style="padding: 12px; background: #64748b20; border-radius: 8px;">
+        <div style="font-size: 24px; font-weight: bold; color: #64748b;">7</div>
+        <div style="font-size: 12px; color: #94a3b8;">Unknown</div>
+      </div>
+    </div>
+    <div style="margin-top: 12px; font-size: 12px; color: #64748b; text-align: center;">
+      Last updated: 2 hours ago • Sources: Club reports, FantasyFootballScout, API-Football
+    </div>
+  </div>
+</div>
