@@ -49,12 +49,26 @@ CRAWL_DELAY_MAX = 5  # Max seconds between requests
 CRAWL_TIMEOUT = 15  # Request timeout in seconds
 CRAWL_MAX_PAGES_PER_SOURCE = 50  # Max pages to crawl per source
 
+# URL patterns to exclude from crawling (glob-style paths)
+EXCLUDED_URL_PATTERNS = [
+    "fantasyfootballscout.co.uk/profiles/",
+]
+
+# Domain-specific URL path restrictions — only URLs matching these prefixes are followed.
+# If a domain is listed here, ONLY URLs under the listed paths are crawled.
+DOMAIN_URL_PATTERNS = {
+    "www.footballcoin.io": ["/blog/"],
+}
+
+# URLs with years older than this are excluded (e.g. /2022/ in path)
+MIN_ARTICLE_YEAR = 2026
+
 # Browser-like headers to avoid bot detection
 CRAWL_HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
     "Accept-Language": "en-US,en;q=0.9",
-    "Accept-Encoding": "gzip, deflate, br",
+    "Accept-Encoding": "gzip, deflate",
     "Connection": "keep-alive",
     "Upgrade-Insecure-Requests": "1",
     "Sec-Fetch-Dest": "document",
