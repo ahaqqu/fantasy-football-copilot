@@ -120,6 +120,20 @@ def render():
 
     with tab_experts:
         st.subheader("Expert Recommendations")
+
+        # Scrape button
+        col1, col2 = st.columns([1, 3])
+        with col1:
+            if st.button(" Scrape Now", key="scrape_btn"):
+                with st.spinner("Scraping expert sources..."):
+                    from data.scraper import scrape_expert_opinions
+                    data = scrape_expert_opinions(use_cache=False, use_llm=True)
+                    st.success(f"Scraped {len(data.get('raw', []))} articles!")
+                    st.rerun()
+        with col2:
+            st.info("Click to scrape fresh expert opinions (takes 1-2 minutes)")
+
+        # Load data
         from data.scraper import scrape_expert_opinions
         data = scrape_expert_opinions(use_cache=True)
         classified = data.get("classified", {})
@@ -127,8 +141,18 @@ def render():
         countries_mentions = classified.get("countries", {})
 
         if not players_mentions and not countries_mentions:
-            st.info("No expert data classified yet. Run: python -c \"from data.scraper import scrape_expert_opinions; scrape_expert_opinions(use_cache=False)\"")
+            st.info("No expert data yet. Click 'Scrape Now' above or run: `python scrape.py`")
             return
+
+        # Show learned players
+        from data.learned_store import get_learned_players
+        learned = get_learned_players()
+        learned_count = len(learned.get("players", {}))
+
+        if learned_count > 0:
+            with st.expander(f" Discovered Players ({learned_count} new players found by LLM)", expanded=False):
+                for name, info in sorted(learned["players"].items()):
+                    st.markdown(f"**{name}** — {info['country']} (from {info['source']}, added {info['added_at'][:10]})")
 
         tab_by_player, tab_by_country = st.tabs(["By Player", "By Country"])
 

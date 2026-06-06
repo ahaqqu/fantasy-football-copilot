@@ -17,7 +17,8 @@ tab1, tab2, tab3, tab4 = st.tabs([
 ])
 
 with tab1:
-    st.info("Player Hub — coming soon (Task 11)")
+    from ui.tabs.player_hub import render as render_player_hub
+    render_player_hub()
 
 with tab2:
     st.info("Fixture Analysis — coming soon (Task 12)")
