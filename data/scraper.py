@@ -4,7 +4,7 @@ import time
 from typing import Any
 
 from config import EXPERT_SOURCES, LLM_PROVIDER
-from data.cache import get_cached, save_to_cache
+from data.cache import get_cached, save_to_cache, get_visited_count, reset_visited
 from data.crawler import crawl_source
 from analysis.expert_opinions import classify_mentions
 
@@ -21,11 +21,13 @@ def scrape_expert_opinions(
         sources = EXPERT_SOURCES
 
     total_sources = len(sources)
+    visited_count = get_visited_count()
     logger.info("=" * 60)
     logger.info("EXPERT SCRAPER STARTED")
     logger.info("  Sources: %d", total_sources)
     logger.info("  LLM extraction: %s", "ON" if use_llm else "OFF (keyword matching)")
     logger.info("  Cache: %s", "enabled" if use_cache else "disabled")
+    logger.info("  Visited URLs (all time): %d", visited_count)
     logger.info("=" * 60)
 
     cache_key = "expert_opinions"
@@ -116,6 +118,7 @@ def scrape_expert_opinions(
     logger.info("  Sources: %d/%d successful", sum(1 for s in source_stats if s["ok"]), total_sources)
     logger.info("  Total pages: %d", len(all_articles))
     logger.info("  Players: %d | Countries: %d", n_players, n_countries)
+    logger.info("  Visited URLs (total): %d", get_visited_count())
     total_time = sum(s["time"] for s in source_stats)
     logger.info("  Total time: %.1fs", total_time)
     logger.info("=" * 60)

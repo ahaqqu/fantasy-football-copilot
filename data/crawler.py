@@ -16,6 +16,7 @@ from config import (
     CRAWL_MAX_PAGES_PER_SOURCE,
     CRAWL_HEADERS,
 )
+from data.cache import get_visited, save_visited
 
 logger = logging.getLogger(__name__)
 
@@ -107,17 +108,22 @@ def crawl_source(
     domain = urlparse(start_url).netloc
     logger.info("--- Starting crawl: %s (depth=%d, max_pages=%d) ---", domain, max_depth, max_pages)
 
-    visited: set[str] = set()
+    # Load persistent visited state
+    visited = get_visited()
+    previously_visited = len(visited)
+    if previously_visited > 0:
+        logger.info("  Loaded %d previously visited URLs", previously_visited)
+
     results: list[dict[str, Any]] = []
     queue: list[tuple[str, int]] = [(start_url, 0)]
     failed = 0
-    skipped_links = 0
+    skipped_new = 0
 
     while queue and len(results) < max_pages:
         url, depth = queue.pop(0)
 
         if url in visited:
-            skipped_links += 1
+            skipped_new += 1
             continue
         if depth > max_depth:
             logger.debug("  Skipping (max depth reached): %s", url[:80])
@@ -152,11 +158,16 @@ def crawl_source(
                 if link not in visited:
                     queue.append((link, depth + 1))
 
+    # Save updated visited state
+    save_visited(visited)
+
     # Summary
+    new_urls = len(visited) - previously_visited
     logger.info("--- Crawl complete: %s ---", domain)
-    logger.info("  Pages crawled: %d", len(results))
+    logger.info("  New pages crawled: %d", len(results))
     logger.info("  Failed: %d", failed)
-    logger.info("  Skipped (duplicate): %d", skipped_links)
+    logger.info("  Skipped (seen before): %d", skipped_new)
+    logger.info("  Total visited (all time): %d (+%d new)", len(visited), new_urls)
     logger.info("  Queue remaining: %d", len(queue))
 
     return results

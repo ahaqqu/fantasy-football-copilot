@@ -39,3 +39,52 @@ def save_to_cache(
     payload = {"data": data, "timestamp": time.time()}
     with open(cache_file, "w", encoding="utf-8") as f:
         json.dump(payload, f, indent=2, default=str)
+
+
+# === Visited URLs Cache ===
+_VISITED_FILE = CACHE_DIR / "visited_urls.json"
+
+
+def get_visited() -> set[str]:
+    """Load previously visited URLs from disk."""
+    if not _VISITED_FILE.exists():
+        return set()
+    try:
+        with open(_VISITED_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return set(data.get("urls", []))
+    except (json.JSONDecodeError, OSError):
+        return set()
+
+
+def save_visited(urls: set[str]) -> None:
+    """Save visited URLs to disk."""
+    CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    with open(_VISITED_FILE, "w", encoding="utf-8") as f:
+        json.dump({"urls": sorted(urls), "timestamp": time.time()}, f, indent=2)
+
+
+def reset_visited() -> int:
+    """Delete visited URLs file. Returns number of URLs cleared."""
+    if not _VISITED_FILE.exists():
+        return 0
+    try:
+        with open(_VISITED_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        count = len(data.get("urls", []))
+    except (json.JSONDecodeError, OSError):
+        count = 0
+    _VISITED_FILE.unlink(missing_ok=True)
+    return count
+
+
+def get_visited_count() -> int:
+    """Get number of visited URLs without loading them all."""
+    if not _VISITED_FILE.exists():
+        return 0
+    try:
+        with open(_VISITED_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return len(data.get("urls", []))
+    except (json.JSONDecodeError, OSError):
+        return 0

@@ -46,13 +46,31 @@ Get a free HuggingFace token at [huggingface.co/settings/tokens](https://hugging
 Basic scrape (keyword-based classification, no API key needed):
 
 ```bash
-python -c "from data.scraper import scrape_expert_opinions; scrape_expert_opinions(use_cache=False); print('Done')"
+python scrape.py
 ```
 
 With LLM extraction (better quality, needs HuggingFace token):
 
 ```bash
-python -c "from data.scraper import scrape_expert_opinions; scrape_expert_opinions(use_cache=False, use_llm=True); print('Done')"
+python scrape.py --llm
+```
+
+Force fresh scrape (skip cache):
+
+```bash
+python scrape.py --no-cache
+```
+
+Reset visited URLs (re-crawl all pages):
+
+```bash
+python scrape.py --reset
+```
+
+Show visited URL count:
+
+```bash
+python scrape.py --status
 ```
 
 ### 4. Fetch player and fixture data
