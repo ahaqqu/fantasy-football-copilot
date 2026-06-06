@@ -23,17 +23,17 @@ Switch from HuggingFace to OpenRouter for better model quality.
 
 | Feature | HuggingFace | OpenRouter |
 |---------|-------------|------------|
-| Free models | ~10B params max | 70B+ params (DeepSeek V3, Qwen3-235B) |
+| Free models | ~10B params max | 120B params (Nemotron 3 Super) |
 | Rate limit | ~1000 req/day | 200 req/day (with $10 top-up) |
 | Quality | Basic | Significantly better |
 | API format | Custom | OpenAI-compatible |
 
-**Recommended model**: `deepseek/deepseek-chat-v3-0324:free` — best for structured JSON extraction and verification.
+**Recommended model**: `nvidia/nemotron-3-super:free` — 120B params, 1M context, best free model available.
 
 **Config changes**:
 - `LLM_PROVIDER = "openrouter"`
 - `OPENROUTER_API_KEY` in `.env`
-- `OPENROUTER_MODEL = "deepseek/deepseek-chat-v3-0324:free"`
+- `OPENROUTER_MODEL = "nvidia/nemotron-3-super:free"`
 - API base: `https://openrouter.ai/api/v1`
 
 ## Data Flow
