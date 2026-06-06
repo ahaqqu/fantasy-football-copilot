@@ -69,3 +69,12 @@ HUGGINGFACE_API_KEY = os.getenv("HUGGINGFACE_API_KEY", "")
 HUGGINGFACE_MODEL = "microsoft/Phi-3-mini-4k-instruct"
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 GEMINI_MODEL = "gemini-2.5-flash"
+
+# === OpenRouter Settings ===
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
+OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+OPENROUTER_MODELS = [
+    "nvidia/nemotron-3-super:free",           # 120B, primary
+    "google/gemma-4-31b:free",                # 31B, fast fallback
+    "nvidia/nemotron-3-nano-30b-a3b:free",    # 30B, lightweight fallback
+]
