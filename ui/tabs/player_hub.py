@@ -121,43 +121,18 @@ def render():
     with tab_experts:
         st.subheader("Expert Recommendations")
 
-        # Scrape button with live logs
-        col1, col2 = st.columns([1, 3])
-        with col1:
-            if st.button(" Scrape Now", key="scrape_btn"):
-                import logging
-                import io
+        # Load data
+        from data.scraper import scrape_expert_opinions
+        data = scrape_expert_opinions(use_cache=True)
+        classified = data.get("classified", {})
+        players_mentions = classified.get("players", {})
+        countries_mentions = classified.get("countries", {})
 
-                # Capture logs to display in UI
-                log_buffer = io.StringIO()
-                log_handler = logging.StreamHandler(log_buffer)
-                log_handler.setLevel(logging.INFO)
-                log_handler.setFormatter(logging.Formatter("%(message)s"))
-
-                # Add handler to scraper loggers
-                for logger_name in ["data.scraper", "data.crawler", "data.extractor"]:
-                    logging.getLogger(logger_name).addHandler(log_handler)
-
-                log_area = st.empty()
-                status = st.status("Scraping expert sources...", expanded=True)
-
-                try:
-                    from data.scraper import scrape_expert_opinions
-                    data = scrape_expert_opinions(use_cache=False, use_llm=True)
-
-                    # Show final logs
-                    logs = log_buffer.getvalue()
-                    if logs:
-                        log_area.code(logs, language=None)
-
-                    status.update(label=f"Scraped {len(data.get('raw', []))} articles!", state="complete")
-                    st.rerun()
-                finally:
-                    # Clean up handlers
-                    for logger_name in ["data.scraper", "data.crawler", "data.extractor"]:
-                        logging.getLogger(logger_name).removeHandler(log_handler)
-        with col2:
-            st.info("Click to scrape fresh expert opinions (takes 1-2 minutes)")
+        if not players_mentions and not countries_mentions:
+            st.warning("No expert data yet. Run locally:")
+            st.code("python scrape.py", language="bash")
+            st.info("Then commit and push: `git add data/cache/ && git commit -m 'data: update' && git push`")
+            return
 
         # Load data
         from data.scraper import scrape_expert_opinions
