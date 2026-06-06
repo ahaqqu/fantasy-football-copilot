@@ -1,54 +1,32 @@
-"""Scrape expert opinions from fantasy football sites and classify by player/country."""
+"""Scrape expert opinions using depth-aware crawler + LLM extraction."""
 import logging
 import time
 from typing import Any
 
-import requests
-from bs4 import BeautifulSoup
-
-from config import EXPERT_SOURCES
+from config import EXPERT_SOURCES, LLM_PROVIDER
 from data.cache import get_cached, save_to_cache
+from data.crawler import crawl_source
 from analysis.expert_opinions import classify_mentions
 
 logger = logging.getLogger(__name__)
 
 
-def parse_expert_content(html: str, source_name: str) -> dict[str, Any]:
-    """Parse HTML content from an expert source into structured data."""
-    soup = BeautifulSoup(html, "lxml")
-
-    # Remove script and style elements
-    for tag in soup(["script", "style", "nav", "footer", "header"]):
-        tag.decompose()
-
-    # Get main content text
-    body = soup.find("body")
-    content = body.get_text(separator="\n", strip=True) if body else soup.get_text(separator="\n", strip=True)
-
-    # Truncate to reasonable length
-    content = content[:5000]
-
-    return {
-        "source": source_name,
-        "content": content,
-        "url": "",
-        "timestamp": time.time(),
-    }
-
-
 def scrape_expert_opinions(
     sources: list[dict] | None = None,
     use_cache: bool = True,
+    use_llm: bool = False,
 ) -> dict[str, Any]:
-    """Scrape opinions and return classified data by player and country.
+    """Scrape opinions using depth-aware crawler and classify by player/country.
+
+    Args:
+        sources: List of expert sources to scrape. Defaults to config.
+        use_cache: If True, return cached data if available.
+        use_llm: If True, use LLM for extraction instead of keyword matching.
 
     Returns:
         {
-            "raw": [...],           # Raw scraped articles
-            "classified": {        # Classified by player/country
-                "players": {...},
-                "countries": {...}
-            }
+            "raw": [...],
+            "classified": {"players": {...}, "countries": {...}}
         }
     """
     if sources is None:
@@ -60,29 +38,91 @@ def scrape_expert_opinions(
         if cached is not None:
             return cached
 
-    results = []
+    all_articles = []
+
     for source in sources:
         name = source["name"]
         url = source["url"]
+        logger.info("Crawling %s from %s", name, url)
+
         try:
-            resp = requests.get(url, timeout=15, headers={
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-            })
-            resp.raise_for_status()
-            parsed = parse_expert_content(resp.text, name)
-            parsed["url"] = url
-            results.append(parsed)
-            logger.info("Scraped %s successfully", name)
-        except requests.RequestException as e:
-            logger.warning("Failed to scrape %s: %s", name, e)
+            pages = crawl_source(url)
+            for page in pages:
+                all_articles.append({
+                    "source": name,
+                    "content": page["content"],
+                    "url": page["url"],
+                    "depth": page.get("depth", 0),
+                    "timestamp": time.time(),
+                })
+            logger.info("Crawled %d pages from %s", len(pages), name)
         except Exception as e:
-            logger.error("Unexpected error scraping %s: %s", name, e)
+            logger.error("Failed to crawl %s: %s", name, e)
 
-    classified = classify_mentions(results) if results else {"players": {}, "countries": {}}
+    # Classify mentions
+    if use_llm and all_articles:
+        classified = _classify_with_llm(all_articles)
+    else:
+        classified = classify_mentions(all_articles) if all_articles else {"players": {}, "countries": {}}
 
-    output = {"raw": results, "classified": classified}
+    output = {"raw": all_articles, "classified": classified}
 
-    if results:
+    if all_articles:
         save_to_cache(cache_key, output)
 
     return output
+
+
+def _classify_with_llm(articles: list[dict]) -> dict[str, Any]:
+    """Use LLM to extract player/country mentions from articles."""
+    from data.extractor import get_provider
+
+    provider = get_provider()
+    all_players: dict[str, dict] = {}
+    all_countries: dict[str, dict] = {}
+
+    for article in articles:
+        try:
+            result = provider.extract(article["content"])
+            source = article["source"]
+
+            for player in result.get("players", []):
+                name = player.get("name", "")
+                if not name:
+                    continue
+                if name not in all_players:
+                    all_players[name] = {
+                        "country": player.get("country", "Unknown"),
+                        "mentions": [],
+                    }
+                all_players[name]["mentions"].append({
+                    "source": source,
+                    "sentiment": player.get("sentiment", "neutral"),
+                    "context": player.get("context", ""),
+                })
+
+            for country_data in result.get("countries", []):
+                name = country_data.get("name", "")
+                if not name:
+                    continue
+                if name not in all_countries:
+                    all_countries[name] = {"mentions": [], "players_mentioned": []}
+                all_countries[name]["mentions"].append({
+                    "source": source,
+                    "sentiment": country_data.get("sentiment", "neutral"),
+                    "context": country_data.get("context", ""),
+                })
+
+            logger.info("LLM extracted from %s: %d players, %d countries",
+                        source, len(result.get("players", [])), len(result.get("countries", [])))
+        except Exception as e:
+            logger.warning("LLM extraction failed for %s: %s", article.get("url", ""), e)
+
+    # Link players to countries
+    for player_name, data in all_players.items():
+        country = data["country"]
+        if country in all_countries:
+            if player_name not in all_countries[country]["players_mentioned"]:
+                all_countries[country]["players_mentioned"].append(player_name)
+
+    return {"players": all_players, "countries": all_countries}

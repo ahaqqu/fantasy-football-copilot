@@ -39,3 +39,33 @@ EXPERT_SOURCES = [
     {"name": "AllAboutFPL", "url": "https://allaboutfpl.com/category/2026-fifa-world-cup-fantasy/"},
     {"name": "FootballCoin", "url": "https://www.footballcoin.io/blog/fantasy-football-world-cup-2026-top-picks-budget-alternatives"},
 ]
+
+# === Crawler Settings ===
+CRAWL_DEPTH = 2  # How many levels deep to follow links (0 = landing page only)
+CRAWL_DELAY_MIN = 2  # Min seconds between requests (be polite)
+CRAWL_DELAY_MAX = 5  # Max seconds between requests
+CRAWL_TIMEOUT = 15  # Request timeout in seconds
+CRAWL_MAX_PAGES_PER_SOURCE = 10  # Max pages to crawl per source
+
+# Browser-like headers to avoid bot detection
+CRAWL_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Accept-Encoding": "gzip, deflate, br",
+    "Connection": "keep-alive",
+    "Upgrade-Insecure-Requests": "1",
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "none",
+    "Sec-Fetch-User": "?1",
+    "Cache-Control": "max-age=0",
+}
+
+# === LLM Extraction Settings ===
+# Provider: "huggingface" or "gemini" (more can be added later)
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "huggingface")
+HUGGINGFACE_API_KEY = os.getenv("HUGGINGFACE_API_KEY", "")
+HUGGINGFACE_MODEL = "mistralai/Mistral-7B-Instruct-v0.1"
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+GEMINI_MODEL = "gemini-2.0-flash"
