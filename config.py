@@ -58,6 +58,7 @@ EXCLUDED_URL_PATTERNS = [
 # If a domain is listed here, ONLY URLs under the listed paths are crawled.
 DOMAIN_URL_PATTERNS = {
     "www.footballcoin.io": ["/blog/"],
+    "www.fantasyfootballscout.co.uk": ["/2026/"],
 }
 
 # URLs with years older than this are excluded (e.g. /2022/ in path)
