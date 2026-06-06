@@ -54,8 +54,8 @@ def render():
     # Load data
     players = fetch_players()
     if not players:
-        st.warning("No player data available. Set API key in config.py or check data sources.")
-        st.info("Tip: Set API_FOOTBALL_KEY environment variable or edit config.py")
+        st.warning("No player data available yet.")
+        st.info("Data is updated daily. Check back soon!")
         return
 
     # Add fantasy points and fitness
@@ -129,20 +129,8 @@ def render():
         countries_mentions = classified.get("countries", {})
 
         if not players_mentions and not countries_mentions:
-            st.warning("No expert data yet. Run locally:")
-            st.code("python scrape.py", language="bash")
-            st.info("Then commit and push: `git add data/cache/ && git commit -m 'data: update' && git push`")
-            return
-
-        # Load data
-        from data.scraper import scrape_expert_opinions
-        data = scrape_expert_opinions(use_cache=True)
-        classified = data.get("classified", {})
-        players_mentions = classified.get("players", {})
-        countries_mentions = classified.get("countries", {})
-
-        if not players_mentions and not countries_mentions:
-            st.info("No expert data yet. Click 'Scrape Now' above or run: `python scrape.py`")
+            st.warning("No expert opinions yet.")
+            st.info("Expert data is updated daily from football analysis sites.")
             return
 
         # Show learned players

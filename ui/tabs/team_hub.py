@@ -88,7 +88,8 @@ def render():
         squad = fetch_team_players(team_id=team_id)
 
         if not squad:
-            st.warning(f"No squad data for {team_name}. Check API key.")
+            st.warning(f"No squad data for {team_name} yet.")
+            st.info("Data is updated daily.")
             return
 
         for p in squad:
@@ -101,7 +102,7 @@ def render():
         st.subheader(f"Predicted Lineup — {team_name}")
         squad_for_lineup = fetch_team_players(team_id=team_id)
         if not squad_for_lineup:
-            st.warning("No squad data available.")
+            st.warning("No squad data available yet.")
             return
 
         for p in squad_for_lineup:

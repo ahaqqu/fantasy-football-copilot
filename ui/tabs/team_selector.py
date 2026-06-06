@@ -66,7 +66,8 @@ def render():
 
     players = fetch_players()
     if not players:
-        st.warning("No player data available. Set API key in config.py.")
+        st.warning("No player data available yet.")
+        st.info("Data is updated daily. Check back soon!")
         return
 
     for p in players:

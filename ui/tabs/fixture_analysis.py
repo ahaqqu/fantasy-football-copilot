@@ -69,7 +69,8 @@ def render():
 
     fixtures = fetch_fixtures()
     if not fixtures:
-        st.warning("No fixture data available. Set API key or check data sources.")
+        st.warning("No fixture data available yet.")
+        st.info("Fixture data is updated daily.")
         return
 
     # Team filter
