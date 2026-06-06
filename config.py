@@ -63,8 +63,8 @@ CRAWL_HEADERS = {
 }
 
 # === LLM Extraction Settings ===
-# Provider: "huggingface" or "gemini" (more can be added later)
-LLM_PROVIDER = os.getenv("LLM_PROVIDER", "huggingface")
+# Provider: "openrouter" (recommended), "huggingface", or "gemini"
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "openrouter")
 HUGGINGFACE_API_KEY = os.getenv("HUGGINGFACE_API_KEY", "")
 HUGGINGFACE_MODEL = "microsoft/Phi-3-mini-4k-instruct"
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
