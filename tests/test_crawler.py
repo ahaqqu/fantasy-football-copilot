@@ -1,6 +1,6 @@
 """Tests for data.crawler — Depth-aware web crawler."""
 from unittest.mock import patch, MagicMock
-from data.crawler import crawl_page, crawl_source, _extract_links, _is_article_url
+from data.crawler import crawl_page, _extract_links, _is_article_url
 
 
 class TestExtractLinks:

@@ -1,7 +1,6 @@
 # tests/test_scraper_llm.py
 """Tests for LLM-based scraping with batching."""
-import json
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock
 from data.scraper import _build_articles_batch, _classify_with_llm_batched
 
 

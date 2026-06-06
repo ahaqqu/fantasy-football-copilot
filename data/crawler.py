@@ -83,7 +83,7 @@ def crawl_page(url: str, visited: set[str] | None = None) -> dict[str, Any] | No
     except requests.ConnectionError as e:
         logger.warning("  [FAIL] Connection error: %s -> %s", url[:60], e)
         return None
-    except requests.Timeout as e:
+    except requests.Timeout:
         logger.warning("  [FAIL] Timeout after %ds: %s", CRAWL_TIMEOUT, url[:60])
         return None
     except requests.HTTPError as e:
@@ -147,8 +147,8 @@ def crawl_source(
         # Find links for next depth level
         if depth < max_depth:
             links = _extract_links(page["html"], url)
-            article_links = [l for l in links if _is_article_url(l)]
-            other_links = [l for l in links if not _is_article_url(l)]
+            article_links = [link for link in links if _is_article_url(link)]
+            other_links = [link for link in links if not _is_article_url(link)]
             logger.debug("  Found %d links (%d articles, %d other)", len(links), len(article_links), len(other_links))
 
             for link in article_links:

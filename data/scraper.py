@@ -4,7 +4,7 @@ import time
 from typing import Any
 
 from config import EXPERT_SOURCES, LLM_PROVIDER
-from data.cache import get_cached, save_to_cache, get_visited_count, reset_visited
+from data.cache import get_cached, save_to_cache
 from data.crawler import crawl_source
 from analysis.expert_opinions import classify_mentions
 

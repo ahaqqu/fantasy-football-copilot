@@ -1,6 +1,4 @@
 """Tests for LLM extraction methods."""
-import json
-from unittest.mock import patch, MagicMock
 from data.extractor import (
     OpenRouterProvider,
     _parse_json,

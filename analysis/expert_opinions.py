@@ -100,7 +100,6 @@ def classify_mentions(opinions: list[dict]) -> dict[str, Any]:
         # --- Match players (try all name variants) ---
         all_players = get_all_players()
         for player_name, country in all_players.items():
-            matched = False
             for variant in _name_variants(player_name):
                 pattern = re.compile(r'\b' + re.escape(variant) + r'\b', re.IGNORECASE)
                 match = pattern.search(content)
@@ -117,7 +116,6 @@ def classify_mentions(opinions: list[dict]) -> dict[str, Any]:
                         "sentiment": sentiment,
                         "context": context_snippet,
                     })
-                    matched = True
                     break  # only match once per player per article
 
         # --- Match countries ---

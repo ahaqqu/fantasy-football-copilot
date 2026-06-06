@@ -1,5 +1,5 @@
 """Tests for data.scraper — Expert Site Scraper."""
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from data.scraper import scrape_expert_opinions
 
 
