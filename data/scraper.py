@@ -123,61 +123,71 @@ def scrape_expert_opinions(
     return output
 
 
-def _classify_with_llm(articles: list[dict]) -> dict[str, Any]:
-    """Use LLM to extract player/country mentions from articles."""
-    from data.extractor import get_provider
+def _build_articles_batch(articles: list[dict], max_articles: int = 10) -> str:
+    """Build numbered article text for batch LLM processing."""
+    parts = []
+    for i, article in enumerate(articles[:max_articles], 1):
+        parts.append(f"---ARTICLE {i}---\n{article['content'][:2000]}")
+    return "\n\n".join(parts)
 
-    provider = get_provider()
+
+def _classify_with_llm_batched(articles: list[dict], provider) -> dict[str, Any]:
+    """Classify articles using batched LLM calls."""
     all_players: dict[str, dict] = {}
     all_countries: dict[str, dict] = {}
-    total = len(articles)
-    success = 0
-    failed = 0
 
-    logger.info("  LLM processing %d articles...", total)
+    batch_size = 10
+    for start in range(0, len(articles), batch_size):
+        batch = articles[start:start + batch_size]
+        batch_text = _build_articles_batch(batch)
 
-    for i, article in enumerate(articles, 1):
-        source = article["source"]
-        url = article.get("url", "?")[:60]
+        logger.info("[LLM] Processing batch %d-%d of %d articles...",
+                     start + 1, min(start + batch_size, len(articles)), len(articles))
 
-        try:
-            result = provider.extract(article["content"])
+        # Call 1: Extract players
+        players_by_article = provider.extract_player_names(batch_text)
+        for article_idx, player_names in players_by_article.items():
+            idx = int(article_idx) - 1
+            if 0 <= idx < len(batch):
+                source = batch[idx]["source"]
+                for name in player_names:
+                    if name not in all_players:
+                        all_players[name] = {"country": "Unknown", "mentions": []}
+                    all_players[name]["mentions"].append({"source": source, "sentiment": "neutral", "context": ""})
 
-            for player in result.get("players", []):
-                name = player.get("name", "")
-                if not name:
-                    continue
-                if name not in all_players:
-                    all_players[name] = {
-                        "country": player.get("country", "Unknown"),
-                        "mentions": [],
-                    }
-                all_players[name]["mentions"].append({
-                    "source": source,
-                    "sentiment": player.get("sentiment", "neutral"),
-                    "context": player.get("context", ""),
-                })
+        # Call 2: Extract countries
+        countries_by_article = provider.extract_countries(batch_text)
+        for article_idx, country_list in countries_by_article.items():
+            idx = int(article_idx) - 1
+            if 0 <= idx < len(batch):
+                source = batch[idx]["source"]
+                for country_data in country_list:
+                    name = country_data.get("name", "")
+                    if name:
+                        if name not in all_countries:
+                            all_countries[name] = {"mentions": [], "players_mentioned": []}
+                        all_countries[name]["mentions"].append({
+                            "source": source,
+                            "sentiment": country_data.get("sentiment", "neutral"),
+                            "context": country_data.get("context", ""),
+                        })
 
-            for country_data in result.get("countries", []):
-                name = country_data.get("name", "")
-                if not name:
-                    continue
-                if name not in all_countries:
-                    all_countries[name] = {"mentions": [], "players_mentioned": []}
-                all_countries[name]["mentions"].append({
-                    "source": source,
-                    "sentiment": country_data.get("sentiment", "neutral"),
-                    "context": country_data.get("context", ""),
-                })
+    # Find unknown players
+    from data.learned_store import get_all_players_merged, save_learned_player
+    known = get_all_players_merged()
+    unknowns = [name for name in all_players if name not in known]
 
-            n_p = len(result.get("players", []))
-            n_c = len(result.get("countries", []))
-            success += 1
-            logger.info("  [%d/%d] OK %s: %d players, %d countries", i, total, source, n_p, n_c)
-
-        except Exception as e:
-            failed += 1
-            logger.warning("  [%d/%d] FAIL %s: %s", i, total, url, e)
+    # Call 3: Verify unknowns
+    if unknowns:
+        logger.info("[LLM] Verifying %d unknown players...", len(unknowns))
+        verified = provider.verify_players(unknowns)
+        for player in verified:
+            name = player.get("full_name", player.get("name", ""))
+            country = player.get("country", "Unknown")
+            if name and player.get("is_real", False):
+                save_learned_player(name, country, "LLM discovery")
+                if name in all_players:
+                    all_players[name]["country"] = country
 
     # Link players to countries
     for player_name, data in all_players.items():
@@ -186,5 +196,11 @@ def _classify_with_llm(articles: list[dict]) -> dict[str, Any]:
             if player_name not in all_countries[country]["players_mentioned"]:
                 all_countries[country]["players_mentioned"].append(player_name)
 
-    logger.info("  LLM done: %d success, %d failed", success, failed)
     return {"players": all_players, "countries": all_countries}
+
+
+def _classify_with_llm(articles: list[dict]) -> dict[str, Any]:
+    """Use LLM to extract player/country mentions from articles."""
+    from data.extractor import get_provider
+    provider = get_provider()
+    return _classify_with_llm_batched(articles, provider)
