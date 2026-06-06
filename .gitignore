@@ -3,7 +3,6 @@ __pycache__/
 *.pyo
 .pytest_cache/
 .ruff_cache/
-data/cache/
 *.egg-info/
 dist/
 build/
@@ -16,3 +15,9 @@ venv/
 .DS_Store
 Thumbs.db
 .opencode/
+
+# Data cache - only ignore temporary files
+data/cache/visited_urls.json
+data/cache/fixtures_*.json
+data/cache/players_*.json
+data/cache/team_*_players_*.json
