@@ -191,8 +191,18 @@ def scrape_expert_opinions(
         # Save to shared directory (committed to git)
         _save_json(SHARED_DIR / "expert_opinions.json", output)
         _save_raw_articles(all_articles)
-        logger.info("  Saved to: data/shared/expert_opinions.json")
-        logger.info("  Raw articles: data/shared/raw_articles.json")
+        logger.info("")
+        logger.info("  FILES SAVED:")
+        logger.info("    data/shared/expert_opinions.json  (classified results)")
+        logger.info("    data/shared/raw_articles.json     (raw articles for LLM retry)")
+        if use_llm:
+            logger.info("")
+            logger.info("  To review raw articles before LLM:")
+            logger.info("    cat data/shared/raw_articles.json")
+        else:
+            logger.info("")
+            logger.info("  To run LLM extraction later:")
+            logger.info("    python scrape.py --retry-llm")
 
     logger.info("")
     logger.info("=" * 60)
@@ -223,17 +233,16 @@ def _save_raw_articles(articles: list[dict]) -> None:
 
 
 def _load_raw_articles() -> list[dict] | None:
-    """Load raw articles from cache for LLM retry."""
+    """Load raw articles from shared directory for LLM retry."""
     if not _RAW_ARTICLES_FILE.exists():
-        logger.error("[RETRY] No raw articles found at %s", _RAW_ARTICLES_FILE)
         return None
     try:
         with open(_RAW_ARTICLES_FILE, "r", encoding="utf-8") as f:
             articles = json.load(f)
-        logger.info("[RETRY] Loaded %d raw articles", len(articles))
+        logger.info("[LOAD] Loaded %d raw articles from %s", len(articles), _RAW_ARTICLES_FILE)
         return articles
     except Exception as e:
-        logger.error("[RETRY] Failed to load: %s", e)
+        logger.error("[LOAD] Failed to load %s: %s", _RAW_ARTICLES_FILE, e)
         return None
 
 
@@ -245,9 +254,11 @@ def retry_llm() -> dict[str, Any] | None:
 
     articles = _load_raw_articles()
     if not articles:
-        logger.error("No raw articles to process. Run scrape first.")
+        logger.error("No raw articles found at: data/shared/raw_articles.json")
+        logger.error("Run 'python scrape.py' first to scrape articles.")
         return None
 
+    logger.info("  Source: data/shared/raw_articles.json")
     logger.info("  Articles: %d", len(articles))
     logger.info("  Provider: %s", LLM_PROVIDER)
 
