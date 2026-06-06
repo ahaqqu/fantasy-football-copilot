@@ -14,10 +14,11 @@ A Streamlit dashboard for analyzing FIFA World Cup 2026 Fantasy Football decisio
 
 - Depth-aware crawler (configurable, default 2 levels deep)
 - Deduplicates visited URLs across sources
+- Persists visited URLs across runs
 - Polite delays between requests (2-5 seconds)
 - Full browser-like headers to avoid bot detection
 - Classified by player and country with sentiment analysis
-- Optional LLM extraction (HuggingFace free tier or Google Gemini)
+- LLM extraction via OpenRouter (free models with fallback)
 
 ### Auto-Discover Players
 
@@ -48,19 +49,20 @@ Create a `.env` file in the project root:
 ```
 API_FOOTBALL_KEY=your_api_key_here
 
-# Optional: for better article extraction
-LLM_PROVIDER=huggingface
-HUGGINGFACE_API_KEY=your_token_here
+# LLM for article extraction (recommended)
+LLM_PROVIDER=openrouter
+OPENROUTER_API_KEY=your_openrouter_key
 ```
 
 Get a free API key from [API-Football](https://www.api-football.com/) (100 req/day free).
-Get a free HuggingFace token at [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens).
+Get a free OpenRouter key at [openrouter.ai](https://openrouter.ai) (200 req/day with $10 top-up).
 
 ### 3. Scrape expert opinions
 
 ```bash
 python scrape.py              # Normal scrape (skips already-crawled pages)
 python scrape.py --reset      # Re-crawl everything from scratch
+python scrape.py --retry-llm  # Re-run LLM on cached raw articles (no re-crawl)
 ```
 
 ### 4. Fetch player and fixture data
@@ -91,7 +93,7 @@ All settings in `config.py` (or override via `.env`):
 | `HUGGINGFACE_MODEL` | `microsoft/Phi-3-mini-4k-instruct` | HF model to use |
 | `CACHE_TTL_HOURS` | `24` | How long to cache fetched data |
 | `OPENROUTER_API_KEY` | (required for LLM) | OpenRouter API key for better model quality |
-| `OPENROUTER_MODELS` | `["nvidia/nemotron-3-super:free", ...]` | Fallback model array |
+| `OPENROUTER_MODELS` | `["nvidia/nemotron-3-super:free", "google/gemma-3-31b-it:free", "nvidia/nemotron-nano-30b-a3b:free"]` | Fallback model array |
 
 ## Project Structure
 
@@ -102,11 +104,12 @@ fantasy-football-copilot/
 ├── .env.example            # Environment variable template
 ├── requirements.txt        # Python dependencies
 ├── data/
-│   ├── cache.py            # JSON cache with TTL
+│   ├── cache.py            # JSON cache with TTL + visited URLs
 │   ├── crawler.py          # Depth-aware web crawler
-│   ├── extractor.py        # LLM extraction (HF, Gemini)
+│   ├── extractor.py        # LLM extraction (OpenRouter, HF, Gemini)
 │   ├── fetcher.py          # API-Football data fetcher
-│   ├── scraper.py          # Orchestrates crawler + extraction
+│   ├── scraper.py          # Orchestrates crawler + batched extraction
+│   ├── learned_store.py    # Persistent LLM-discovered players
 │   └── players_reference.py # ~120 WC players for name matching
 ├── analysis/
 │   ├── player_stats.py     # Player ranking & comparison
@@ -121,7 +124,7 @@ fantasy-football-copilot/
 │       ├── fixture_analysis.py
 │       ├── team_hub.py
 │       └── team_selector.py
-├── tests/                  # 63 tests
+├── tests/                  # 76 tests
 └── mockups/                # HTML mockup references
 ```
 
@@ -154,43 +157,29 @@ Sign in with your GitHub account.
 - **Branch:** `main`
 - **Main file path:** `app.py`
 
-### 3. Add secrets
-
-Click "Advanced settings" → "Secrets" and paste:
-
-```toml
-API_FOOTBALL_KEY = "your_api_football_key"
-
-# OpenRouter (recommended)
-LLM_PROVIDER = "openrouter"
-OPENROUTER_API_KEY = "your_openrouter_key"
-
-# OR HuggingFace (fallback)
-# LLM_PROVIDER = "huggingface"
-# HUGGINGFACE_API_KEY = "your_hf_token"
-```
-
-### 4. Deploy
+### 3. Deploy
 
 Click "Deploy". You'll get a URL like:
 ```
 https://your-app-name.streamlit.app
 ```
 
-### 5. Scrape on cloud
+No API keys needed on cloud — it reads committed JSON files.
 
-Click "Scrape Now" button in the Expert Picks tab, or run:
+### 4. Update data on cloud
+
+Scrape locally, commit, and push:
 ```bash
-# Local: scrape first, then deploy
 python scrape.py
 git add data/cache/
-git commit -m "data: add scraped expert opinions"
+git commit -m "data: update expert opinions"
 git push
 ```
+
+Streamlit Cloud auto-deploys from GitHub.
 
 ### Notes
 
 - **Free tier limits:** Streamlit Community Cloud has 1GB memory, 1 CPU
-- **Scraping works:** The crawler runs on Streamlit's servers
-- **No paid APIs needed:** Uses free OpenRouter models
+- **Scraping:** Run locally, commit JSON, push — Streamlit Cloud reads from GitHub
 - **Data persists:** Cache files stay in the repo (commit them)

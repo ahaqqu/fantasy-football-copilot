@@ -30,7 +30,8 @@ def test_full_scrape_discovers_new_player(tmp_path):
 
     with patch("data.extractor.get_provider", return_value=mock_provider):
         with patch("data.scraper.crawl_source", return_value=articles):
-            scrape_expert_opinions(use_cache=False, use_llm=True)
+            with patch("data.scraper._load_raw_articles", return_value=None):
+                scrape_expert_opinions(use_llm=True)
 
     from data.learned_store import get_learned_players
 

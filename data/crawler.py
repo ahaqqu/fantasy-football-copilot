@@ -116,6 +116,7 @@ def crawl_source(
 
     results: list[dict[str, Any]] = []
     queue: list[tuple[str, int]] = [(start_url, 0)]
+    queued: set[str] = {start_url}
     failed = 0
     skipped_new = 0
 
@@ -152,11 +153,13 @@ def crawl_source(
             logger.debug("  Found %d links (%d articles, %d other)", len(links), len(article_links), len(other_links))
 
             for link in article_links:
-                if link not in visited:
+                if link not in visited and link not in queued:
                     queue.insert(0, (link, depth + 1))
+                    queued.add(link)
             for link in other_links:
-                if link not in visited:
+                if link not in visited and link not in queued:
                     queue.append((link, depth + 1))
+                    queued.add(link)
 
     # Save updated visited state
     save_visited(visited)

@@ -165,6 +165,10 @@ def render():
                 key=lambda x: len(x[1]["mentions"]),
                 reverse=True,
             )
+            # Source name -> URL mapping
+            from config import EXPERT_SOURCES
+            source_urls = {s["name"]: s["url"] for s in EXPERT_SOURCES}
+
             for player_name, data_p in sorted_players[:30]:
                 country = data_p["country"]
                 mentions = data_p["mentions"]
@@ -177,10 +181,11 @@ def render():
                 sentiment_bar += f" 🔴 {neg}" if neg else ""
 
                 with st.expander(f"**{player_name}** ({country}) — {len(mentions)} mentions {sentiment_bar}"):
-                    st.caption(f"Sources: {', '.join(sources)}")
                     for m in mentions:
-                        color = "green" if m["sentiment"] == "positive" else "red" if m["sentiment"] == "negative" else "gray"
-                        st.markdown(f"**{m['source']}** [{m['sentiment']}] — _{m['context']}_")
+                        url = m.get("url", "#")
+                        st.markdown(f"**{m['source']}** [{m['sentiment']}] — [{url[:60]}...]({url})")
+                        if m.get("context"):
+                            st.caption(f"_{m['context']}_")
 
         with tab_by_country:
             st.markdown(f"**{len(countries_mentions)} countries mentioned across all sources**")
@@ -189,6 +194,10 @@ def render():
                 key=lambda x: len(x[1]["mentions"]),
                 reverse=True,
             )
+            # Source name -> URL mapping
+            from config import EXPERT_SOURCES
+            source_urls = {s["name"]: s["url"] for s in EXPERT_SOURCES}
+
             for country, data_c in sorted_countries:
                 mentions = data_c["mentions"]
                 players_list = data_c.get("players_mentioned", [])
@@ -203,5 +212,7 @@ def render():
                     if players_list:
                         st.caption(f"Players mentioned: {', '.join(players_list[:10])}")
                     for m in mentions[:5]:
-                        color = "green" if m["sentiment"] == "positive" else "red" if m["sentiment"] == "negative" else "gray"
-                        st.markdown(f"**{m['source']}** [{m['sentiment']}] — _{m['context']}_")
+                        url = m.get("url", "#")
+                        st.markdown(f"**{m['source']}** [{m['sentiment']}] — [{url[:60]}...]({url})")
+                        if m.get("context"):
+                            st.caption(f"_{m['context']}_")

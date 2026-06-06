@@ -41,11 +41,11 @@ EXPERT_SOURCES = [
 ]
 
 # === Crawler Settings ===
-CRAWL_DEPTH = 2  # How many levels deep to follow links (0 = landing page only)
+CRAWL_DEPTH = 3  # How many levels deep to follow links (0 = landing page only)
 CRAWL_DELAY_MIN = 2  # Min seconds between requests (be polite)
 CRAWL_DELAY_MAX = 5  # Max seconds between requests
 CRAWL_TIMEOUT = 15  # Request timeout in seconds
-CRAWL_MAX_PAGES_PER_SOURCE = 25  # Max pages to crawl per source
+CRAWL_MAX_PAGES_PER_SOURCE = 50  # Max pages to crawl per source
 
 # Browser-like headers to avoid bot detection
 CRAWL_HEADERS = {

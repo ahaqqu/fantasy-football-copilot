@@ -72,6 +72,19 @@ Return ONLY valid JSON:
 
 Names to verify: {names}"""
 
+SUMMARY_PROMPT = """Based on these expert opinions about FIFA World Cup Fantasy Football, write a brief summary.
+
+Include:
+- Top recommended players and why
+- Players to avoid and why
+- Top contender countries
+- Key insights from experts
+
+Keep it concise (5-8 sentences). Be direct, no fluff.
+
+Expert data:
+{data}"""
+
 
 def _parse_json(text: str) -> dict[str, Any]:
     """Extract JSON from LLM response text."""
@@ -285,6 +298,40 @@ class OpenRouterProvider(LLMProvider):
         prompt = VERIFY_PLAYERS_PROMPT.format(names=", ".join(names))
         result = self._call_with_fallback(prompt)
         return [p for p in result.get("players", []) if p.get("is_real", False)]
+
+    def summarize_opinions(self, summary_data: dict) -> str:
+        """Generate natural language summary of expert opinions."""
+        data_text = json.dumps(summary_data, indent=2, ensure_ascii=False)[:4000]
+        prompt = SUMMARY_PROMPT.format(data=data_text)
+        headers = {"Authorization": f"Bearer {self.api_key}"}
+        payload = {
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": 0.3,
+            "max_tokens": 512,
+        }
+
+        for model in self.models:
+            try:
+                logger.info("[LLM] Summarizing with model: %s", model)
+                resp = requests.post(
+                    f"{self.base_url}/chat/completions",
+                    headers=headers,
+                    json={**payload, "model": model},
+                    timeout=60,
+                )
+                if resp.status_code == 429:
+                    continue
+                resp.raise_for_status()
+                data = resp.json()
+                text = data["choices"][0]["message"]["content"]
+                logger.info("[LLM] Summary generated (%d chars)", len(text))
+                return text.strip()
+            except Exception as e:
+                logger.warning("[LLM] Summary failed on %s: %s", model, e)
+                continue
+
+        logger.error("[LLM] All models failed for summary")
+        return ""
 
 
 def get_provider(name: str | None = None) -> LLMProvider:

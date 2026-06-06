@@ -96,6 +96,7 @@ def classify_mentions(opinions: list[dict]) -> dict[str, Any]:
     for opinion in opinions:
         source = opinion["source"]
         content = opinion["content"]
+        article_url = opinion.get("url", "#")
 
         # --- Match players (try all name variants) ---
         all_players = get_all_players()
@@ -113,6 +114,7 @@ def classify_mentions(opinions: list[dict]) -> dict[str, Any]:
                         players_result[player_name] = {"country": country, "mentions": []}
                     players_result[player_name]["mentions"].append({
                         "source": source,
+                        "url": article_url,
                         "sentiment": sentiment,
                         "context": context_snippet,
                     })
@@ -136,6 +138,7 @@ def classify_mentions(opinions: list[dict]) -> dict[str, Any]:
                 countries_result[country] = {"mentions": [], "players_mentioned": []}
             countries_result[country]["mentions"].append({
                 "source": source,
+                "url": article_url,
                 "sentiment": sentiment,
                 "context": context_snippet,
             })
@@ -157,6 +160,116 @@ def summarize_expert_opinions(opinions: list[dict]) -> dict[str, Any]:
         "sources": sources,
         "total_opinions": len(opinions),
         "latest_timestamp": max((o.get("timestamp", 0) for o in opinions), default=0),
+    }
+
+
+def summarize_classified(classified: dict) -> dict[str, Any]:
+    """Summarize classified expert opinions into actionable insights.
+
+    Returns:
+        {
+            "players": {
+                "Messi": {
+                    "country": "Argentina",
+                    "mention_count": 5,
+                    "source_count": 3,
+                    "sources": ["Scout", "Hub"],
+                    "sentiment": {"positive": 4, "neutral": 1, "negative": 0},
+                    "verdict": "highly_recommended"
+                }
+            },
+            "countries": {
+                "Argentina": {
+                    "mention_count": 12,
+                    "players_mentioned": ["Messi", "Alvarez"],
+                    "sentiment": {"positive": 10, "neutral": 2, "negative": 0},
+                    "verdict": "strong_contender"
+                }
+            },
+            "top_players": [...],
+            "top_countries": [...]
+        }
+    """
+    players_summary = {}
+    countries_summary = {}
+
+    # Summarize players
+    for name, data in classified.get("players", {}).items():
+        mentions = data.get("mentions", [])
+        sources = list(set(m.get("source", "") for m in mentions))
+        sentiment_counts = {"positive": 0, "neutral": 0, "negative": 0}
+        for m in mentions:
+            s = m.get("sentiment", "neutral")
+            sentiment_counts[s] = sentiment_counts.get(s, 0) + 1
+
+        total = len(mentions)
+        pos_ratio = sentiment_counts["positive"] / total if total > 0 else 0
+        neg_ratio = sentiment_counts["negative"] / total if total > 0 else 0
+
+        if pos_ratio >= 0.7:
+            verdict = "highly_recommended"
+        elif pos_ratio >= 0.4:
+            verdict = "recommended"
+        elif neg_ratio >= 0.7:
+            verdict = "avoid"
+        elif neg_ratio >= 0.4:
+            verdict = "risky"
+        else:
+            verdict = "neutral"
+
+        players_summary[name] = {
+            "country": data.get("country", "Unknown"),
+            "mention_count": total,
+            "source_count": len(sources),
+            "sources": sources,
+            "sentiment": sentiment_counts,
+            "verdict": verdict,
+        }
+
+    # Summarize countries
+    for name, data in classified.get("countries", {}).items():
+        mentions = data.get("mentions", [])
+        sentiment_counts = {"positive": 0, "neutral": 0, "negative": 0}
+        for m in mentions:
+            s = m.get("sentiment", "neutral")
+            sentiment_counts[s] = sentiment_counts.get(s, 0) + 1
+
+        total = len(mentions)
+        pos_ratio = sentiment_counts["positive"] / total if total > 0 else 0
+
+        if pos_ratio >= 0.6:
+            verdict = "strong_contender"
+        elif pos_ratio >= 0.3:
+            verdict = "dark_horse"
+        else:
+            verdict = "underdog"
+
+        countries_summary[name] = {
+            "mention_count": total,
+            "players_mentioned": data.get("players_mentioned", []),
+            "sentiment": sentiment_counts,
+            "verdict": verdict,
+        }
+
+    # Top players by mention count
+    top_players = sorted(
+        [{"name": n, **v} for n, v in players_summary.items()],
+        key=lambda x: x["mention_count"],
+        reverse=True,
+    )[:15]
+
+    # Top countries by mention count
+    top_countries = sorted(
+        [{"name": n, **v} for n, v in countries_summary.items()],
+        key=lambda x: x["mention_count"],
+        reverse=True,
+    )[:15]
+
+    return {
+        "players": players_summary,
+        "countries": countries_summary,
+        "top_players": top_players,
+        "top_countries": top_countries,
     }
 
 
