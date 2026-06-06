@@ -27,11 +27,11 @@ The scraper automatically discovers new football players from expert articles us
 1. Extracts player names from all articles (batched)
 2. Filters out already-known players
 3. Verifies unknowns with LLM ("Is this a real football player?")
-4. Saves verified players to `data/learned_players.json`
+4. Saves verified players to `data/shared/learned_players.json`
 
 To reset learned players:
 ```bash
-rm data/cache/learned_players.json
+rm data/shared/learned_players.json
 ```
 
 ## Quick Start
@@ -104,6 +104,13 @@ fantasy-football-copilot/
 ├── .env.example            # Environment variable template
 ├── requirements.txt        # Python dependencies
 ├── data/
+│   ├── shared/             # Committed to git (read by Streamlit Cloud)
+│   │   ├── expert_opinions.json
+│   │   ├── raw_articles.json
+│   │   └── learned_players.json
+│   ├── cache/              # Gitignored (temporary)
+│   │   ├── visited_urls.json
+│   │   └── fixtures/players/team data
 │   ├── cache.py            # JSON cache with TTL + visited URLs
 │   ├── crawler.py          # Depth-aware web crawler
 │   ├── extractor.py        # LLM extraction (OpenRouter, HF, Gemini)
@@ -124,7 +131,7 @@ fantasy-football-copilot/
 │       ├── fixture_analysis.py
 │       ├── team_hub.py
 │       └── team_selector.py
-├── tests/                  # 76 tests
+├── tests/                  # 86 tests
 └── mockups/                # HTML mockup references
 ```
 
@@ -171,7 +178,7 @@ No API keys needed on cloud — it reads committed JSON files.
 Scrape locally, commit, and push:
 ```bash
 python scrape.py
-git add data/cache/
+git add data/shared/
 git commit -m "data: update expert opinions"
 git push
 ```
@@ -182,4 +189,4 @@ Streamlit Cloud auto-deploys from GitHub.
 
 - **Free tier limits:** Streamlit Community Cloud has 1GB memory, 1 CPU
 - **Scraping:** Run locally, commit JSON, push — Streamlit Cloud reads from GitHub
-- **Data persists:** Cache files stay in the repo (commit them)
+- **Data structure:** `data/shared/` (committed) vs `data/cache/` (temporary, gitignored)
