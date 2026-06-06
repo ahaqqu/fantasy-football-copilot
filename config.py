@@ -35,8 +35,7 @@ FORMATION = "4-4-2"  # Default formation
 # === Expert Sources ===
 EXPERT_SOURCES = [
     {"name": "FantasyFootballScout", "url": "https://www.fantasyfootballscout.co.uk/fantasy-fifa-world-cup-2026-ultimate-guide-best-players-tips-team-reveals-more"},
-    {"name": "FantasyFootballHub", "url": "https://www.fantasyfootballhub.co.uk/fantasy-fifa-world-cup"},
-    {"name": "AllAboutFPL", "url": "https://allaboutfpl.com/fantasy-fifa-world-cup-2026/"},
-    {"name": "RotoWire", "url": "https://www.rotowire.com/soccer/fantasy-fifa-world-cup-2026.php"},
-    {"name": "FootballPredictions", "url": "https://www.footballpredictions.com/world-cup-2026/"},
+    {"name": "FantasyFootballHub", "url": "https://www.fantasyfootballhub.co.uk/world-cup-fantasy-tips-ultimate-guide"},
+    {"name": "AllAboutFPL", "url": "https://allaboutfpl.com/category/2026-fifa-world-cup-fantasy/"},
+    {"name": "FootballCoin", "url": "https://www.footballcoin.io/blog/fantasy-football-world-cup-2026-top-picks-budget-alternatives"},
 ]
