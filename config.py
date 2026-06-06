@@ -68,4 +68,4 @@ LLM_PROVIDER = os.getenv("LLM_PROVIDER", "huggingface")
 HUGGINGFACE_API_KEY = os.getenv("HUGGINGFACE_API_KEY", "")
 HUGGINGFACE_MODEL = "microsoft/Phi-3-mini-4k-instruct"
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-GEMINI_MODEL = "gemini-2.0-flash"
+GEMINI_MODEL = "gemini-2.5-flash"
