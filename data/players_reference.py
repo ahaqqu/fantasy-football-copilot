@@ -229,3 +229,9 @@ for player, country in PLAYERS_BY_COUNTRY.items():
     if country not in PLAYERS_BY_COUNTRY_REVERSE:
         PLAYERS_BY_COUNTRY_REVERSE[country] = []
     PLAYERS_BY_COUNTRY_REVERSE[country].append(player)
+
+
+def get_all_players() -> dict[str, str]:
+    """Get all players (hardcoded + learned) merged."""
+    from data.learned_store import get_all_players_merged
+    return get_all_players_merged()
