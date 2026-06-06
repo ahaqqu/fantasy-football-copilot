@@ -1,6 +1,6 @@
 """Tests for data.scraper — Expert Site Scraper."""
-from unittest.mock import patch
-from data.scraper import scrape_expert_opinions, _dedup_articles, _consolidate_classified, _content_hash
+from unittest.mock import patch, MagicMock
+from data.scraper import scrape_expert_opinions, retry_llm, _dedup_articles, _consolidate_classified, _content_hash, _save_json, _load_raw_articles
 from analysis.expert_opinions import summarize_classified
 
 
@@ -61,6 +61,44 @@ class TestDedup:
             "countries": {},
         }
         result = _consolidate_classified(classified)
+        assert len(result["players"]["Messi"]["mentions"]) == 2
+
+    def test_consolidate_dedup_countries(self):
+        classified = {
+            "players": {},
+            "countries": {
+                "Brazil": {
+                    "mentions": [
+                        {"source": "Scout", "sentiment": "positive"},
+                        {"source": "Scout", "sentiment": "positive"},
+                    ],
+                    "players_mentioned": ["Neymar"],
+                }
+            },
+        }
+        result = _consolidate_classified(classified)
+        assert len(result["countries"]["Brazil"]["mentions"]) == 1
+
+    def test_consolidate_empty(self):
+        classified = {"players": {}, "countries": {}}
+        result = _consolidate_classified(classified)
+        assert result == {"players": {}, "countries": {}}
+
+    def test_consolidate_different_sentiment_same_source(self):
+        classified = {
+            "players": {
+                "Messi": {
+                    "country": "Argentina",
+                    "mentions": [
+                        {"source": "Scout", "sentiment": "positive"},
+                        {"source": "Scout", "sentiment": "negative"},
+                    ],
+                }
+            },
+            "countries": {},
+        }
+        result = _consolidate_classified(classified)
+        # Different sentiment from same source should be kept
         assert len(result["players"]["Messi"]["mentions"]) == 2
 
 
@@ -166,3 +204,43 @@ class TestSummarizeClassified:
         assert result["top_players"][0]["name"] == "B"
         assert result["top_players"][1]["name"] == "A"
         assert result["top_players"][2]["name"] == "C"
+
+    def test_summarize_empty(self):
+        classified = {"players": {}, "countries": {}}
+        result = summarize_classified(classified)
+        assert result["top_players"] == []
+        assert result["top_countries"] == []
+
+
+class TestRetryLLM:
+    def test_retry_llm_no_articles(self):
+        """Retry with no articles returns None."""
+        with patch("data.scraper._load_raw_articles", return_value=None):
+            result = retry_llm()
+            assert result is None
+
+    @patch("data.scraper._summarize_with_llm", return_value="Summary text")
+    @patch("data.scraper._classify_with_llm", return_value={"players": {}, "countries": {}})
+    @patch("data.scraper._load_raw_articles", return_value=[{"url": "http://a.com", "content": "Test"}])
+    def test_retry_llm_success(self, mock_load, mock_classify, mock_summary):
+        """Retry with articles processes and returns result."""
+        result = retry_llm()
+        assert result is not None
+        assert "raw" in result
+        assert "classified" in result
+        assert "summary" in result
+        assert "llm_summary" in result
+        assert result["llm_summary"] == "Summary text"
+
+
+class TestSaveJson:
+    def test_save_json_creates_file(self, tmp_path):
+        """_save_json creates JSON file."""
+        from pathlib import Path
+        test_file = tmp_path / "test.json"
+        _save_json(test_file, {"key": "value"})
+        assert test_file.exists()
+        with open(test_file) as f:
+            import json
+            data = json.load(f)
+        assert data == {"key": "value"}
