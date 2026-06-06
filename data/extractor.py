@@ -18,6 +18,9 @@ from config import (
     HUGGINGFACE_MODEL,
     GEMINI_API_KEY,
     GEMINI_MODEL,
+    OPENROUTER_API_KEY,
+    OPENROUTER_BASE_URL,
+    OPENROUTER_MODELS,
 )
 
 logger = logging.getLogger(__name__)
@@ -40,6 +43,45 @@ Return ONLY valid JSON, no other text:
 
 Article text:
 {article_text}"""
+
+
+EXTRACT_PLAYERS_PROMPT = """Extract all football player names from these articles. Each article is numbered.
+
+Return ONLY valid JSON:
+{{"1": ["Player A", "Player B"], "2": ["Player C"]}}
+
+Articles:
+{articles}"""
+
+EXTRACT_COUNTRIES_PROMPT = """Extract country mentions from these articles about FIFA World Cup Fantasy.
+Each article is numbered. For each country, return sentiment and brief context.
+
+Return ONLY valid JSON:
+{{"1": [{{"name": "Country", "sentiment": "positive|negative|neutral", "context": "brief reason"}}]}}
+
+Articles:
+{articles}"""
+
+VERIFY_PLAYERS_PROMPT = """For each player name below, verify:
+1. Is this a real professional football player?
+2. What is their full name in Latin/English characters? (e.g. "Takefusa Kubo" not "久保建英")
+3. What country do they play for (national team)?
+
+Return ONLY valid JSON:
+{{"players": [{{"name": "...", "full_name": "...", "country": "...", "is_real": true|false}}]}}
+
+Names to verify: {names}"""
+
+
+def _parse_json(text: str) -> dict[str, Any]:
+    """Extract JSON from LLM response text."""
+    match = re.search(r'\{[\s\S]*\}', text)
+    if match:
+        try:
+            return json.loads(match.group())
+        except json.JSONDecodeError as e:
+            logger.debug("[LLM] JSON parse failed: %s", e)
+    return {}
 
 
 class LLMProvider(ABC):
@@ -170,12 +212,88 @@ class GeminiProvider(LLMProvider):
         return {"players": [], "countries": []}
 
 
+class OpenRouterProvider(LLMProvider):
+    """OpenRouter API provider with model fallback."""
+
+    def __init__(self, api_key: str = OPENROUTER_API_KEY, model: str | None = None, models: list[str] | None = None):
+        self.api_key = api_key
+        if models:
+            self.models = models
+            self.model = models[0]
+        elif model:
+            self.models = [model]
+            self.model = model
+        else:
+            self.models = OPENROUTER_MODELS
+            self.model = OPENROUTER_MODELS[0]
+        self.base_url = OPENROUTER_BASE_URL
+        logger.info("[LLM] OpenRouter provider initialized (models=%s, key=%s)",
+                     self.models, "set" if api_key else "NOT SET")
+
+    def _call_with_fallback(self, prompt: str) -> dict[str, Any]:
+        """Try each model in order until one succeeds."""
+        headers = {"Authorization": f"Bearer {self.api_key}"}
+        payload = {
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": 0.1,
+            "max_tokens": 2048,
+        }
+
+        for model in self.models:
+            try:
+                logger.info("[LLM] Trying model: %s", model)
+                resp = requests.post(
+                    f"{self.base_url}/chat/completions",
+                    headers=headers,
+                    json={**payload, "model": model},
+                    timeout=60,
+                )
+                if resp.status_code == 429:
+                    logger.warning("[LLM] Rate limited on %s, trying next...", model)
+                    continue
+                resp.raise_for_status()
+                data = resp.json()
+                text = data["choices"][0]["message"]["content"]
+                logger.info("[LLM] Success with model: %s", model)
+                return _parse_json(text)
+            except requests.Timeout:
+                logger.warning("[LLM] Timeout on %s, trying next...", model)
+                continue
+            except Exception as e:
+                logger.warning("[LLM] Error on %s: %s, trying next...", model, e)
+                continue
+
+        logger.error("[LLM] All models failed")
+        return {}
+
+    def extract(self, article_text: str) -> dict[str, Any]:
+        prompt = EXTRACTION_PROMPT.format(article_text=article_text[:3000])
+        return self._call_with_fallback(prompt)
+
+    def extract_player_names(self, articles_text: str) -> dict[str, list[str]]:
+        """Extract player names from batched articles."""
+        prompt = EXTRACT_PLAYERS_PROMPT.format(articles=articles_text)
+        return self._call_with_fallback(prompt)
+
+    def extract_countries(self, articles_text: str) -> dict[str, list[dict]]:
+        """Extract countries from batched articles."""
+        prompt = EXTRACT_COUNTRIES_PROMPT.format(articles=articles_text)
+        return self._call_with_fallback(prompt)
+
+    def verify_players(self, names: list[str]) -> list[dict]:
+        """Verify if names are real football players."""
+        prompt = VERIFY_PLAYERS_PROMPT.format(names=", ".join(names))
+        result = self._call_with_fallback(prompt)
+        return [p for p in result.get("players", []) if p.get("is_real", False)]
+
+
 def get_provider(name: str | None = None) -> LLMProvider:
     """Get LLM provider by name. Defaults to config setting."""
     if name is None:
         name = LLM_PROVIDER
 
     providers = {
+        "openrouter": OpenRouterProvider,
         "huggingface": HuggingFaceProvider,
         "gemini": GeminiProvider,
     }
