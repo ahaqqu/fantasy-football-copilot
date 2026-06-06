@@ -185,6 +185,15 @@ Names to verify: {unknown_names}
 - **Already known player**: Skip verification, use existing data
 - **OpenRouter rate limit**: Fall back to HuggingFace if OpenRouter fails
 
+## Exit Criteria
+
+- [ ] Clear logging for all LLM calls (batch progress, results, failures)
+- [ ] Unit tests with good coverage (all new functions)
+- [ ] Documentation updated (README, config, usage examples)
+- [ ] All existing tests pass (63+)
+- [ ] Linting clean
+- [ ] Committed and pushed
+
 ## Testing
 
 - Unit test `get_all_players()` merges correctly
@@ -194,4 +203,5 @@ Names to verify: {unknown_names}
 - Unit test `learned_players.json` read/write
 - Unit test dedup: known players skipped
 - Unit test OpenRouter provider makes correct API calls
+- Unit test batch splitting respects size limits
 - Integration test: full scrape discovers new player (mock LLM)
